@@ -4,3 +4,4 @@ ignore:
   - .github
   - .pkgmeta
   - CHANGELOG.md
+  - assets
