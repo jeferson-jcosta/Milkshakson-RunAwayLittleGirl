@@ -51,6 +51,7 @@ local gateMode = "readable" -- "readable" | "curve" | "none"
 local alphaOk = "-"
 local alphaReadable = "?"
 local PlayWolf -- defined further down
+local playedThisChase = false
 local function IsMoving()
     local speed = Safe(GetUnitSpeed, "player")
     if speed ~= nil then return speed > 0 end
@@ -390,7 +391,10 @@ local function CheckAppeared()
     end
     alphaReadable = "yes"
     local visible = a > 0.5
-    if visible and not wasVisible and active then PlayWolf() end
+    if visible and not wasVisible and active and not playedThisChase then
+        playedThisChase = true
+        PlayWolf()
+    end
     wasVisible = visible
 end
 
@@ -487,6 +491,42 @@ end
 ns.PlayWolf = function() local s = db.sound; db.sound = true; PlayWolf(); db.sound = s end
 
 ---------------------------------------------------------------------------
+-- Blizzard's own low-health warning (red screen edges) is driven by the game's
+-- secure code, which can read your health. When it fires during a chase with
+-- hidden health, the mirror is already visible, so the wolf line fits.
+---------------------------------------------------------------------------
+local lowHealthHooked = false
+
+local function OnLowHealthWarning()
+    if active and gateMode == "curve" and not playedThisChase then
+        playedThisChase = true
+        PlayWolf()
+    end
+end
+
+local function LowHealthShowing()
+    local f = _G.LowHealthFrame
+    if not f then return false end
+    local shown = Safe(f.IsVisible, f)
+    return shown == true
+end
+
+local function HookLowHealth()
+    if lowHealthHooked then return end
+    local f = _G.LowHealthFrame
+    if f and f.HookScript then
+        pcall(f.HookScript, f, "OnShow", OnLowHealthWarning)
+        lowHealthHooked = true
+    end
+    for _, name in ipairs({ "LowHealthFrame_StartFlashing", "LowHealthFrame_Flash", "UIParent_UpdateLowHealthFrame" }) do
+        if type(_G[name]) == "function" then
+            hooksecurefunc(name, function() if LowHealthShowing() then OnLowHealthWarning() end end)
+            lowHealthHooked = true
+        end
+    end
+end
+
+---------------------------------------------------------------------------
 -- Your character's laugh (classic race/gender voice files, by FileDataID)
 ---------------------------------------------------------------------------
 local LAUGH = {
@@ -538,7 +578,13 @@ local function Tick()
                 -- The line plays only when we know the mirror is really visible,
                 -- i.e. when your health can be read. With hidden health the game
                 -- decides visibility on its own, so the addon stays silent.
-                if gateMode == "readable" then PlayWolf(); wasVisible = true else wasVisible = false end
+                playedThisChase = false
+                if gateMode == "readable" then
+                    PlayWolf(); wasVisible = true; playedThisChase = true
+                else
+                    wasVisible = false
+                    if LowHealthShowing() then OnLowHealthWarning() end
+                end
             end
         end
         if Safe(UnitAffectingCombat, "player") then
@@ -634,6 +680,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
         movingEvt = false
     elseif event == "PLAYER_ENTERING_WORLD" then
         DetectHealthScale()
+        HookLowHealth()
     elseif event == "PLAYER_REGEN_ENABLED" then
         DetectHealthScale()
         warnedSecret = false
@@ -677,6 +724,8 @@ SlashCmdList.RUNAWAYLITTLEGIRL = function(msg)
         if db.debugLog then db.log = {} end
         print(PREFIX .. "diagnostic log: " .. (db.debugLog and "ON (saved on /reload)" or "OFF"))
     elseif cmd == "debug" then
+        print(PREFIX .. ("low-health warning: frame=%s hooked=%s showing=%s alphaReadable=%s"):format(
+            tostring(_G.LowHealthFrame ~= nil), tostring(lowHealthHooked), tostring(LowHealthShowing()), alphaReadable))
         local cur, max = UnitHealth("player"), UnitHealthMax("player")
         local hidden = (issecretvalue and (issecretvalue(cur) or issecretvalue(max))) and true or false
         local pct = PlayerHealthPct()

@@ -55,5 +55,5 @@ If you enjoy the addon, you can buy me a coffee. The same links are in the in-ga
 - **PIX (Brasil):** `2d8f2ae7-76df-497d-9afa-cb7d12dd73f9`
 
 ## Sounds
-- **When the mirror appears:** the Big Bad Wolf's *"Run away, little girl! Run away!"* (Karazhan opera). It only plays when the addon can confirm the mirror is visible. When the game hides your health, which happens in combat on Forever, the mirror still appears at the limit but silently.
+- **When the mirror appears:** the Big Bad Wolf's *"Run away, little girl! Run away!"* (Karazhan opera). When the game hides your health, which happens in combat on Forever, the mirror still appears at your limit, and the line plays when the game's own low-health warning (red screen edges) fires during the chase.
 - **When you get away:** your character's laugh (race and gender).
