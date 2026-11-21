@@ -1,5 +1,9 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
+## 2.4.0
+- Trigger is only the game's own low-health warning; the health % setting (`/rv hp`) and the hidden-alpha mode were removed.
+- Mirror and wolf line always appear together.
+
 ## 2.3.0
 - When the game hides your health, the game's own low-health warning is the trigger: it shows the mirror, starts the chase and plays the wolf line at the same moment.
 - Without that warning on the client, falls back to the silent health-% gate.

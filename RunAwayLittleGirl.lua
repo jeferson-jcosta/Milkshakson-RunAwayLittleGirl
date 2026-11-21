@@ -11,7 +11,6 @@ local TICK = 0.2
 
 local db
 local defaults = {
-    hp = 40,          -- activate at this health % or lower
     secs = 2,         -- ...after running this many seconds
     sound = true,
     escapeLaugh = true, -- your character's laugh when you get away
@@ -38,20 +37,10 @@ local function Safe(fn, ...)
     return v
 end
 
-local function PlayerHealthPct()
-    local cur, max = Safe(UnitHealth, "player"), Safe(UnitHealthMax, "player")
-    if cur and max and max > 0 then return cur / max * 100 end
-    return nil -- hidden by the game
-end
-
 -- Movement: speed is hidden in combat on Forever, so also track the
 -- PLAYER_STARTED_MOVING / PLAYER_STOPPED_MOVING events.
 local movingEvt = false
-local gateMode = "readable" -- "readable" | "curve" | "none"
-local alphaOk = "-"
-local alphaReadable = "?"
 local PlayWolf -- defined further down
-local playedThisChase = false
 local LowHealthShowing, LowHealthAvailable -- defined further down
 local function IsMoving()
     local speed = Safe(GetUnitSpeed, "player")
@@ -61,44 +50,6 @@ local function IsMoving()
         if m ~= nil then return m and true or false end
     end
     return movingEvt
-end
-
--- Health gate. When the game hides your health, the addon can't compare it,
--- but it can hand it to a curve whose result drives the mirror's alpha:
--- the game itself makes the mirror visible only at or below the threshold.
-local curve, curveKey
-local healthScale = 1 -- UnitHealthPercent domain: 1 (0..1) or 100 (0..100)
-local function DetectHealthScale()
-    if not UnitHealthPercent then return end
-    local v = Safe(UnitHealthPercent, "player")
-    local cur, max = Safe(UnitHealth, "player"), Safe(UnitHealthMax, "player")
-    if v and cur and max and max > 0 then
-        healthScale = (v > 1.0001 or (cur < max and v > 1)) and 100 or 1
-    end
-end
-
-local function HealthCurve()
-    if not (UnitHealthPercent and C_CurveUtil and C_CurveUtil.CreateCurve) then return nil end
-    local key = db.hp .. ":" .. healthScale
-    if curve and curveKey == key then return curve end
-    local ok, c = pcall(C_CurveUtil.CreateCurve)
-    if not ok or not c then return nil end
-    local stepType = Enum and Enum.LuaCurveType and Enum.LuaCurveType.Step
-    if stepType and c.SetType then pcall(c.SetType, c, stepType) end
-    local t = db.hp / 100 * healthScale
-    pcall(c.AddPoint, c, 0, 1)
-    pcall(c.AddPoint, c, t + 0.0001 * healthScale, 0)
-    pcall(c.AddPoint, c, healthScale, 0)
-    curve, curveKey = c, key
-    return c
-end
-
--- Returns the (possibly hidden) alpha 0/1 for the current health, or nil if unsupported.
-local function HealthAlpha()
-    local c = HealthCurve()
-    if not c then return nil end
-    local ok, a = pcall(UnitHealthPercent, "player", false, c)
-    if ok and a ~= nil then return a end
 end
 
 -- Is this nameplate unit a hostile mob chasing/attacking the player?
@@ -332,7 +283,6 @@ closeBtn:SetScript("OnEnter", function(self)
 end)
 closeBtn:SetScript("OnLeave", GameTooltip_Hide)
 local escapedUntil
-local warnedSecret = false
 
 local function UpdateRunning()
     -- Only movement inside combat counts (walking up to a mob before the pull doesn't).
@@ -347,82 +297,30 @@ local function IsFleeing()
     return runningSince ~= nil and GetTime() - runningSince >= db.secs
 end
 
+local warnedNoWarning = false
+
+-- Trigger: the game's own low-health warning (red screen edges). The game decides
+-- when you are low on health; the addon only listens to it.
 local function ShouldActivate()
     if not Safe(UnitAffectingCombat, "player") then return false end
     if db.requireRunning and not IsFleeing() then return false end
-
-    local pct = PlayerHealthPct()
-    if pct ~= nil then
-        gateMode = "readable"
-        return pct <= db.hp
-    end
-    -- Health hidden: the game's own low-health warning is the trigger
-    -- (mirror fully visible + wolf line at the same moment).
-    if LowHealthAvailable() then
-        gateMode = "warning"
-        return LowHealthShowing()
-    end
-    -- No warning on this client: let the game apply your % through the alpha curve.
-    if HealthAlpha() ~= nil then
-        gateMode = "curve"
-        return true
-    end
-    -- No way to check health on this client: respect the threshold, don't show.
-    gateMode = "none"
-    if not warnedSecret then
-        warnedSecret = true
-        print(PREFIX .. L.SECRET_HP)
-    end
-    return false
-end
-
-
--- 3D models ignore their parent's alpha, so every model gets it as well.
-local function SetAllAlpha(a)
-    local ok = pcall(mirror.SetAlpha, mirror, a)
-    for _, sl in ipairs(slots) do
-        pcall(sl.model.SetAlpha, sl.model, a)
-        if sl.model.SetModelAlpha then pcall(sl.model.SetModelAlpha, sl.model, a) end
-    end
-    return ok
-end
-
--- After the game applies the (hidden) alpha, try to read it back. If the client
--- lets us read it, we know the exact moment the mirror becomes visible.
-local wasVisible = false
-local function CheckAppeared()
-    local ok, a = pcall(mirror.GetAlpha, mirror)
-    if not ok or a == nil or issecret(a) then
-        alphaReadable = "no"
-        return
-    end
-    alphaReadable = "yes"
-    local visible = a > 0.5
-    if visible and not wasVisible and active and not playedThisChase then
-        playedThisChase = true
-        PlayWolf()
-    end
-    wasVisible = visible
-end
-
-local function ApplyAlpha(useGate)
-    -- An invisible mirror must not catch clicks: no mouse while the game gates it.
-    mirror:EnableMouse(not (useGate and gateMode == "curve") and not db.locked)
-    if useGate and gateMode == "curve" then
-        local a = HealthAlpha()
-        if a ~= nil then
-            local ok = SetAllAlpha(a)
-            alphaOk = ok and "ok" or "refused"
-            if ok then
-                CheckAppeared()
-                return
-            end
+    if not LowHealthAvailable() then
+        if not warnedNoWarning then
+            warnedNoWarning = true
+            print(PREFIX .. L.NO_WARNING)
         end
+        return false
     end
-    SetAllAlpha(1)
+    return LowHealthShowing()
 end
 
-local function Render(chasers, header, useGate)
+local function ApplyAlpha()
+    mirror:EnableMouse(not db.locked)
+    pcall(mirror.SetAlpha, mirror, 1)
+    for _, sl in ipairs(slots) do pcall(sl.model.SetAlpha, sl.model, 1) end
+end
+
+local function Render(chasers, header)
     title:SetText(header)
     local n = math.min(#chasers, MAX_SLOTS)
     for i = 1, MAX_SLOTS do
@@ -436,7 +334,7 @@ local function Render(chasers, header, useGate)
     end
     LayoutSlots(n)
     mirror:Show()
-    ApplyAlpha(useGate)
+    ApplyAlpha()
 end
 
 ---------------------------------------------------------------------------
@@ -460,17 +358,12 @@ local function LogState(decision)
     lastLog = now
     local plates = C_NamePlate.GetNamePlates() or {}
     local p1 = plates[1] and (plates[1].namePlateUnitToken or (plates[1].UnitFrame and plates[1].UnitFrame.unit))
-    local entry = ("t=%.0f gate=%s alpha=%s alphaReadable=%s moveEvt=%s isMoving=%s hpPct=%s scale=%d | combat=%s speed=%s run=%.1f hp=%s/%s pct=%s | plates=%d chasers=%d | p1=%s attack=%s targetMe=%s threat=%s p1combat=%s | %s"):format(
-        now, gateMode, alphaOk, alphaReadable, tostring(movingEvt), Raw(IsPlayerMoving), Raw(UnitHealthPercent, "player"), healthScale,
-        Raw(UnitAffectingCombat, "player"), Raw(GetUnitSpeed, "player"),
-        runningSince and (now - runningSince) or 0,
-        Raw(UnitHealth, "player"), Raw(UnitHealthMax, "player"),
-        PlayerHealthPct() and ("%.0f"):format(PlayerHealthPct()) or "?",
+    local entry = ("t=%.0f warning=%s moveEvt=%s isMoving=%s | combat=%s run=%.1f | plates=%d chasers=%d | p1=%s targetMe=%s threat=%s | %s"):format(
+        now, tostring(LowHealthShowing()), tostring(movingEvt), Raw(IsPlayerMoving),
+        Raw(UnitAffectingCombat, "player"), runningSince and (now - runningSince) or 0,
         #plates, #FindChasers(), tostring(p1),
-        p1 and Raw(UnitCanAttack, "player", p1) or "-",
         p1 and Raw(UnitIsUnit, p1 .. "target", "player") or "-",
         p1 and Raw(UnitThreatSituation, "player", p1) or "-",
-        p1 and Raw(UnitAffectingCombat, p1) or "-",
         decision)
     db.log = db.log or {}
     table.insert(db.log, entry)
@@ -504,12 +397,7 @@ ns.PlayWolf = function() local s = db.sound; db.sound = true; PlayWolf(); db.sou
 ---------------------------------------------------------------------------
 local lowHealthHooked = false
 
-local function OnLowHealthWarning()
-    if active and gateMode == "curve" and not playedThisChase then
-        playedThisChase = true
-        PlayWolf()
-    end
-end
+local function OnLowHealthWarning() end -- activation happens in Tick (every 0.2 s)
 
 function LowHealthShowing()
     local f = _G.LowHealthFrame
@@ -589,13 +477,7 @@ local function Tick()
                 -- The line plays only when we know the mirror is really visible,
                 -- i.e. when your health can be read. With hidden health the game
                 -- decides visibility on its own, so the addon stays silent.
-                playedThisChase = false
-                if gateMode == "readable" or gateMode == "warning" then
-                    PlayWolf(); wasVisible = true; playedThisChase = true
-                else
-                    wasVisible = false
-                    if LowHealthShowing() then OnLowHealthWarning() end
-                end
+                PlayWolf()
             end
         end
         if Safe(UnitAffectingCombat, "player") then
@@ -623,11 +505,11 @@ local function Tick()
             end
             escapedUntil = now + 2.5
             if db.escapeLaugh then PlayLaugh() else Play(SOUNDKIT and SOUNDKIT.IG_QUEST_LIST_COMPLETE) end
-            Render({}, "|cff33ff33" .. L.ESCAPED .. "|r", true)
+            Render({}, "|cff33ff33" .. L.ESCAPED .. "|r")
         else
             wipe(lastChasers)
             for i, c in ipairs(chasers) do lastChasers[i] = c.unit end
-            Render(chasers, "|cffff4040" .. L.CHASING:format(#chasers) .. "|r", true)
+            Render(chasers, "|cffff4040" .. L.CHASING:format(#chasers) .. "|r")
         end
         return
     end
@@ -664,7 +546,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
         for k, v in pairs(defaults) do
             if db[k] == nil then db[k] = v end
         end
-        db.always = nil -- option removed in 1.4
+        db.always, db.hp = nil, nil -- options removed (1.4 / 2.4)
         db.escapeEmote, db.emoteLog = nil, nil -- /lol replaced by the laugh sound in 1.7
         db.debugLog, db.log = nil, nil -- diagnostics off (use /mrv log to turn on)
         if not db.migrated12 then -- v1.0/1.1 saved locked=true and an old position format
@@ -690,11 +572,8 @@ events:SetScript("OnEvent", function(_, event, arg1)
     elseif event == "PLAYER_STOPPED_MOVING" then
         movingEvt = false
     elseif event == "PLAYER_ENTERING_WORLD" then
-        DetectHealthScale()
         HookLowHealth()
     elseif event == "PLAYER_REGEN_ENABLED" then
-        DetectHealthScale()
-        warnedSecret = false
     end
 end)
 
@@ -735,18 +614,13 @@ SlashCmdList.RUNAWAYLITTLEGIRL = function(msg)
         if db.debugLog then db.log = {} end
         print(PREFIX .. "diagnostic log: " .. (db.debugLog and "ON (saved on /reload)" or "OFF"))
     elseif cmd == "debug" then
-        print(PREFIX .. ("low-health warning: frame=%s hooked=%s showing=%s alphaReadable=%s"):format(
-            tostring(_G.LowHealthFrame ~= nil), tostring(lowHealthHooked), tostring(LowHealthShowing()), alphaReadable))
-        local cur, max = UnitHealth("player"), UnitHealthMax("player")
-        local hidden = (issecretvalue and (issecretvalue(cur) or issecretvalue(max))) and true or false
-        local pct = PlayerHealthPct()
-        print(PREFIX .. ("combat=%s moving=%s running=%.1fs | health hidden=%s pct=%s | hp<=%d%% secs=%.1f locked=%s"):format(
+        print(PREFIX .. ("low-health warning: frame=%s hooked=%s showing=%s"):format(
+            tostring(_G.LowHealthFrame ~= nil), tostring(lowHealthHooked), tostring(LowHealthShowing())))
+        print(PREFIX .. ("combat=%s moving=%s running=%.1fs | secs=%.1f onlyRunning=%s locked=%s"):format(
             tostring(Safe(UnitAffectingCombat, "player")), tostring(IsMoving()),
-            runningSince and (GetTime() - runningSince) or 0,
-            tostring(hidden), pct and ("%.0f%%"):format(pct) or "?",
-            db.hp, db.secs, tostring(db.locked)))
+            runningSince and (GetTime() - runningSince) or 0, db.secs, tostring(db.requireRunning), tostring(db.locked)))
         local n = 0
-        for _, c in ipairs(FindChasers()) do n = n + 1 end
+        for _ in ipairs(FindChasers()) do n = n + 1 end
         print(PREFIX .. ("nameplates=%d chasers=%d active=%s test=%s move=%s"):format(
             #(C_NamePlate.GetNamePlates() or {}), n, tostring(active), tostring(testMode), tostring(moveMode)))
     elseif cmd == "lock" then
@@ -759,9 +633,6 @@ SlashCmdList.RUNAWAYLITTLEGIRL = function(msg)
         LayoutSlots(shownSlots)
         ApplyPosition()
         print(PREFIX .. L.RESET)
-    elseif cmd == "hp" and tonumber(arg) then
-        db.hp = math.min(100, math.max(1, math.floor(tonumber(arg))))
-        print(PREFIX .. L.SET_HP:format(db.hp))
     elseif cmd == "secs" and tonumber(arg) then
         db.secs = math.max(0, tonumber(arg))
         print(PREFIX .. L.SET_SECS:format(db.secs))
@@ -769,7 +640,7 @@ SlashCmdList.RUNAWAYLITTLEGIRL = function(msg)
         db.sound = not db.sound
         print(PREFIX .. L.SET_SOUND:format(OnOff(db.sound)))
     elseif cmd == "status" then
-        print(PREFIX .. L.STATUS:format(db.hp, db.secs, OnOff(db.sound)))
+        print(PREFIX .. L.STATUS:format(db.secs, OnOff(db.sound)))
     elseif cmd == "config" or cmd == "options" or cmd == "opcoes" then
         ns:OpenOptions()
     elseif cmd == "lang" then
@@ -795,7 +666,7 @@ SlashCmdList.RUNAWAYLITTLEGIRL = function(msg)
             end
         end
     else
-        print(PREFIX .. L.STATUS:format(db.hp, db.secs, OnOff(db.sound)))
+        print(PREFIX .. L.STATUS:format(db.secs, OnOff(db.sound)))
         print(PREFIX .. L.HELP1)
         print(PREFIX .. L.HELP5)
         print(PREFIX .. L.HELP_CONFIG)

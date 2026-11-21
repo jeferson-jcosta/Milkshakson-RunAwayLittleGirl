@@ -9,7 +9,7 @@ function ns:BuildOptions(db)
     local p = UI:NewPanel("Run Away Little Girl", L.CFG_DESC)
 
     UI:Section(p, L.CFG_ACTIVATION)
-    UI:Slider(p, L.CFG_HP, 1, 100, 1, "%d%%", function() return db.hp end, function(v) db.hp = v end, L.CFG_HP_TIP)
+    UI:Note(p, L.CFG_TRIGGER)
     UI:Check(p, L.CFG_RUNNING, L.CFG_RUNNING_TIP, function() return db.requireRunning end, function(v) db.requireRunning = v end)
     UI:Slider(p, L.CFG_SECS, 0, 10, 0.5, "%.1f s", function() return db.secs end, function(v) db.secs = v end, L.CFG_SECS_TIP)
     UI:Check(p, L.CFG_SOUND, L.CFG_SOUND_TIP, function() return db.sound end, function(v) db.sound = v end)
