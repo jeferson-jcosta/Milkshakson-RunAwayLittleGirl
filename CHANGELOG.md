@@ -1,5 +1,8 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
+## Unreleased
+- With more than one chaser the mirror no longer widens: it keeps one mob (the one on you first) and shows a red **+N** badge with how many more are chasing you.
+
 ## 2.4.0
 - Trigger is only the game's own low-health warning; the health % setting (`/rv hp`) and the hidden-alpha mode were removed.
 - Mirror and wolf line always appear together.

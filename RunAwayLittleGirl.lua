@@ -6,7 +6,7 @@
 local ADDON, ns = ...
 local L = ns.L
 local PREFIX = "|cff33ff99[Run Away Little Girl]|r "
-local MAX_SLOTS = 3
+local MAX_SLOTS = 1 -- one mob is shown; the others are a "+N" badge
 local TICK = 0.2
 
 local db
@@ -177,6 +177,19 @@ for i = 1, MAX_SLOTS do
     s.tag = s:CreateFontString(nil, "OVERLAY", "GameFontRedSmall")
     s.tag:SetPoint("TOP", s.model, "TOP", 0, -2)
 
+    -- "+N" badge: how many more mobs are chasing you besides this one
+    s.badge = CreateFrame("Frame", nil, s)
+    s.badge:SetSize(24, 24)
+    s.badge:SetPoint("TOPRIGHT", s.model, "TOPRIGHT", 2, 2)
+    s.badge:SetFrameLevel(s.model:GetFrameLevel() + 5)
+    local dot = s.badge:CreateTexture(nil, "ARTWORK")
+    dot:SetAllPoints()
+    dot:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask")
+    dot:SetVertexColor(0.8, 0.05, 0.05, 0.95)
+    s.badge.text = s.badge:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    s.badge.text:SetPoint("CENTER", 0, 0)
+    s.badge:Hide()
+
     s:Hide()
     slots[i] = s
 end
@@ -331,6 +344,14 @@ local function Render(chasers, header)
             slots[i]:Hide()
             slots[i].unit = nil
         end
+    end
+    -- the list is sorted with the mob on you first; the rest become a badge
+    local more = #chasers - n
+    local last = slots[n]
+    for _, sl in ipairs(slots) do sl.badge:Hide() end
+    if last and more > 0 then
+        last.badge.text:SetText("+" .. more)
+        last.badge:Show()
     end
     LayoutSlots(n)
     mirror:Show()

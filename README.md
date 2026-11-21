@@ -1,6 +1,6 @@
 # Milkshakson - Run Away Little Girl (WoW: Forever)
 
-*"Run away, little girl! Run away!"* A "rearview mirror" that shows the mobs still chasing you while you flee. Each mob appears as a live 3D model with its name, its health bar and "on you" when it is targeting you.
+*"Run away, little girl! Run away!"* A "rearview mirror" that shows the mobs still chasing you while you flee. The mob on you appears as a live 3D model with its name, its health bar and "on you" when it is targeting you. When more mobs are chasing you, the mirror keeps the same size and shows a red **+N** badge with how many more.
 
 ## When it shows up
 All of these must be true:
