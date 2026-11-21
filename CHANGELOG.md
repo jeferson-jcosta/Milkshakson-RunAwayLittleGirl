@@ -1,5 +1,9 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
+## 2.3.0
+- When the game hides your health, the game's own low-health warning is the trigger: it shows the mirror, starts the chase and plays the wolf line at the same moment.
+- Without that warning on the client, falls back to the silent health-% gate.
+
 ## 2.2.0
 - With hidden health, the wolf line plays when the game's own low-health warning fires during a chase (the mirror is already visible by then).
 - `/mrv debug` shows whether the low-health warning is available.

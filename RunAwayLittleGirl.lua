@@ -52,6 +52,7 @@ local alphaOk = "-"
 local alphaReadable = "?"
 local PlayWolf -- defined further down
 local playedThisChase = false
+local LowHealthShowing, LowHealthAvailable -- defined further down
 local function IsMoving()
     local speed = Safe(GetUnitSpeed, "player")
     if speed ~= nil then return speed > 0 end
@@ -355,7 +356,13 @@ local function ShouldActivate()
         gateMode = "readable"
         return pct <= db.hp
     end
-    -- Health hidden: let the game apply the threshold through the alpha curve.
+    -- Health hidden: the game's own low-health warning is the trigger
+    -- (mirror fully visible + wolf line at the same moment).
+    if LowHealthAvailable() then
+        gateMode = "warning"
+        return LowHealthShowing()
+    end
+    -- No warning on this client: let the game apply your % through the alpha curve.
     if HealthAlpha() ~= nil then
         gateMode = "curve"
         return true
@@ -504,11 +511,15 @@ local function OnLowHealthWarning()
     end
 end
 
-local function LowHealthShowing()
+function LowHealthShowing()
     local f = _G.LowHealthFrame
     if not f then return false end
     local shown = Safe(f.IsVisible, f)
     return shown == true
+end
+
+function LowHealthAvailable()
+    return _G.LowHealthFrame ~= nil
 end
 
 local function HookLowHealth()
@@ -579,7 +590,7 @@ local function Tick()
                 -- i.e. when your health can be read. With hidden health the game
                 -- decides visibility on its own, so the addon stays silent.
                 playedThisChase = false
-                if gateMode == "readable" then
+                if gateMode == "readable" or gateMode == "warning" then
                     PlayWolf(); wasVisible = true; playedThisChase = true
                 else
                     wasVisible = false
