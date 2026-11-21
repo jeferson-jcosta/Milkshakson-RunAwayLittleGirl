@@ -1,0 +1,23 @@
+## Interface: 16001
+## Title: Milkshakson - Run Away Little Girl
+## Category: Milkshakson
+## Notes: Run away, little girl! A "rearview mirror" that shows the mobs still chasing you when you flee at low health.
+## Notes-ptBR: Run away, little girl! Um "retrovisor" que mostra os mobs que ainda te perseguem quando você foge com pouca vida.
+## Author: JJC
+## Version: 2.1.3
+## OptionalDeps: DBM-Core
+## IconTexture: Interface\Icons\Ability_Rogue_Sprint
+## SavedVariables: RunAwayLittleGirlDB
+## AddonCompartmentFunc: RunAwayLittleGirl_OnAddonCompartmentClick
+
+Libs\MilkshaksonUI.lua
+
+# Locale system + English (required)
+Locales\Locales.lua
+Locales\enUS.lua
+
+# Language packs (optional)
+Locales\ptBR.lua
+
+RunAwayLittleGirl.lua
+Options.lua

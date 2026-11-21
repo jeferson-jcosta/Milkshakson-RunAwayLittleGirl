@@ -1,0 +1,6 @@
+# BigWigs packager / CurseForge: package the repo root as this addon folder
+package-as: Milkshakson-RunAwayLittleGirl
+ignore:
+  - .github
+  - .pkgmeta
+  - CHANGELOG.md

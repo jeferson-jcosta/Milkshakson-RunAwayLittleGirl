@@ -1,0 +1,7 @@
+# Packaging / editor leftovers
+*.zip
+.release/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
