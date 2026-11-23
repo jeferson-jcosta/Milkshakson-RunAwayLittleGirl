@@ -4,7 +4,7 @@
 -- sub-page per addon. Falls back to a standalone window if the Settings
 -- API is unavailable.
 
-local VERSION = 7
+local VERSION = 8
 local lib = _G.MilkshaksonUI
 if lib and (lib.version or 0) >= VERSION then return end
 lib = lib or {}
@@ -126,6 +126,7 @@ function lib:NewPanel(title, desc)
     d:SetJustifyH("LEFT")
     d:SetText(desc or "")
     p.y = -64
+    lib:SupportBanner(p)
     outer:SetScript("OnShow", function() p:SetHeight(-p.y + 24); p:Refresh() end)
     -- The Settings panel also calls these on canvas pages.
     outer.OnRefresh = function() p:Refresh() end
@@ -320,7 +321,75 @@ local function CopyBox(p, label, value)
     p.y = p.y - 44
 end
 
+---------------------------------------------------------------------------
+-- "Buy me a coffee" banner at the top of every Milkshakson options page.
+-- Addons can't open a browser: the buttons show the link selected in a
+-- popup, ready for Ctrl+C.
+---------------------------------------------------------------------------
+function lib:CopyLink(title, value)
+    if not (StaticPopupDialogs and StaticPopup_Show) then return end
+    if not StaticPopupDialogs.MILKSHAKSON_COPY_LINK then
+        StaticPopupDialogs.MILKSHAKSON_COPY_LINK = {
+            text = "%s", button1 = OKAY or "OK", hasEditBox = true, editBoxWidth = 380,
+            timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+            OnShow = function(self, data)
+                local eb = self.editBox or self.EditBox
+                if eb then eb:SetText(data or ""); eb:SetFocus(); eb:HighlightText() end
+            end,
+            EditBoxOnTextChanged = function(self, data)
+                if data and self:GetText() ~= data then self:SetText(data); self:HighlightText() end
+            end,
+            EditBoxOnEnterPressed = function(self) self:GetParent():Hide() end,
+            EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+        }
+    end
+    StaticPopup_Show("MILKSHAKSON_COPY_LINK", title .. "\n" .. (PT and "Ctrl+C para copiar, depois cole no navegador ou no app do banco."
+        or "Ctrl+C to copy, then paste it in your browser or bank app."), nil, value)
+end
+
+function lib:SupportBanner(p)
+    local S = self.SUPPORT or {}
+    if (S.paypal or "") == "" and (S.pix or "") == "" then return end
+    local box = CreateFrame("Frame", nil, p, "BackdropTemplate")
+    box:SetPoint("TOPLEFT", 16, p.y)
+    box:SetPoint("RIGHT", p, "RIGHT", -16, 0)
+    box:SetHeight(50)
+    if box.SetBackdrop then
+        box:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+        box:SetBackdropColor(0.35, 0.2, 0.05, 0.6)
+        box:SetBackdropBorderColor(1, 0.82, 0, 0.9)
+    end
+    local icon = box:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(32, 32)
+    icon:SetPoint("LEFT", 9, 0)
+    icon:SetTexture("Interface\\Icons\\INV_Drink_04")
+    local t = box:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    t:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -1)
+    t:SetText(PT and "Gostou? Me pague um café" or "Enjoying it? Buy me a coffee")
+    local sub = box:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -3)
+    sub:SetText(PT and "Clique para copiar o link" or "Click to copy the link")
+    local x = -10
+    for _, b in ipairs({ { "pix", PT and "PIX (Brasil)" or "PIX (Brazil)" }, { "paypal", "PayPal" } }) do
+        local value = S[b[1]]
+        if (value or "") ~= "" then
+            local btn = CreateFrame("Button", nil, box, "UIPanelButtonTemplate")
+            btn:SetText(b[2])
+            btn:SetSize(100, 24)
+            btn:SetPoint("RIGHT", box, "RIGHT", x, 0)
+            btn:SetScript("OnClick", function() lib:CopyLink(b[2], value) end)
+            Tooltip(btn, b[2], value)
+            x = x - 106
+        end
+    end
+    p.y = p.y - 60
+    p.supportShown = true
+end
+
 function lib:Support(p)
+    if p.supportShown then return end -- already at the top (SupportBanner)
     local S = self.SUPPORT or {}
     if (S.paypal or "") == "" and (S.pix or "") == "" then return end
     self:Section(p, PT and "Apoie com um café" or "Buy me a coffee")
