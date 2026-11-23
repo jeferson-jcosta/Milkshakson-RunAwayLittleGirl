@@ -1,6 +1,6 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
-## Unreleased
+## 2.4.2
 - Options: "Buy me a coffee" moved to the top of the page, highlighted, with PayPal and PIX buttons that show the link ready to copy (addons can't open the browser). Shared UI library v8.
 
 ## 2.4.1
