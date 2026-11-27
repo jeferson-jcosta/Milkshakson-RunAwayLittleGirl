@@ -21,30 +21,39 @@ local TRIES = { { "display", 13099 }, { "creature", 12919 }, { "creature", 63721
 -- EmoteTalk, EmoteWave, EmoteCheer: he fishes, and now and then talks or waves.
 local FISH, STAND, IDLE = 134, 0, { 60, 67, 68 }
 
+-- `frame` shows / hides both; Nat (natBox) and the pole (badge) are placed and
+-- sized on their own (saved in db.fishNat / db.fishPole = { x, y, w, h }, from
+-- the screen center), movable and resizable while unlocked (db.fishingLocked).
+local NAT_DEF = { x = 0, y = 11, w = W, h = H }
+local POLE_DEF = { x = 0, y = -64, w = SIZE, h = SIZE }
+
 local frame = CreateFrame("Frame", "RunAwayLittleGirlFishing", UIParent)
-frame:SetSize(W, H + SIZE / 2)
-frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+frame:SetAllPoints(UIParent)
 frame:SetFrameStrata("MEDIUM")
 frame:EnableMouse(false)
 frame:Hide()
 
-local model = CreateFrame("PlayerModel", "RunAwayLittleGirlNatPagle", frame)
-model:SetSize(W, H)
-model:SetPoint("TOP")
+local natBox = CreateFrame("Frame", "RunAwayLittleGirlNatBox", frame)
+natBox:SetSize(W, H)
+natBox:SetPoint("CENTER", UIParent, "CENTER", NAT_DEF.x, NAT_DEF.y)
+natBox:EnableMouse(false)
+local model = CreateFrame("PlayerModel", "RunAwayLittleGirlNatPagle", natBox)
+model:SetAllPoints()
 model:EnableMouse(false)
-frame.model = model
+frame.model, frame.nat = model, natBox
 
--- round pole icon with a thin gold ring, at Nat's feet
-local badge = CreateFrame("Frame", nil, frame)
+-- round pole icon with a thin gold ring (at Nat's feet by default)
+local badge = CreateFrame("Frame", "RunAwayLittleGirlPoleBox", frame)
 badge:SetSize(SIZE, SIZE)
-badge:SetPoint("BOTTOM")
+badge:SetPoint("CENTER", UIParent, "CENTER", POLE_DEF.x, POLE_DEF.y)
 badge:SetFrameLevel(model:GetFrameLevel() + 2)
+badge:EnableMouse(false)
 local ring = badge:CreateTexture(nil, "ARTWORK", nil, 1)
 ring:SetAllPoints()
 ring:SetColorTexture(0.85, 0.68, 0.25, 0.9)
 local icon = badge:CreateTexture(nil, "ARTWORK", nil, 2)
-icon:SetPoint("CENTER")
-icon:SetSize(SIZE - 4, SIZE - 4)
+icon:SetPoint("TOPLEFT", 2, -2)
+icon:SetPoint("BOTTOMRIGHT", -2, 2)
 frame.icon, frame.ring, frame.pole = icon, ring, badge
 
 local function Round(tex)
@@ -135,19 +144,111 @@ function ns.FishingPoleEquipped()
     return classID == 2 and subclassID == pole
 end
 
+---------------------------------------------------------------------------
+-- Unlock: drag to move, corner grip to resize; a gold outline and a label
+-- show what is what. Locked (default): no mouse at all (never blocks clicks).
+---------------------------------------------------------------------------
+local function Save(box, key)
+    local db = RunAwayLittleGirlDB
+    if not db then return end
+    local cx, cy = box:GetCenter()
+    local ux, uy = UIParent:GetCenter()
+    if not (cx and ux) then return end
+    db[key] = { x = math.floor(cx - ux + 0.5), y = math.floor(cy - uy + 0.5),
+        w = math.floor(box:GetWidth() + 0.5), h = math.floor(box:GetHeight() + 0.5) }
+end
+
+local function Place(box, key, def)
+    local db = RunAwayLittleGirlDB
+    local v = (db and type(db[key]) == "table" and db[key]) or def
+    box:ClearAllPoints()
+    box:SetPoint("CENTER", UIParent, "CENTER", v.x or def.x, v.y or def.y)
+    box:SetSize(v.w or def.w, v.h or def.h)
+end
+
+local function Editable(box, key, label, minW, minH, maxW, maxH, square)
+    box:SetMovable(true)
+    box:SetResizable(true)
+    box:SetClampedToScreen(true)
+    if box.SetResizeBounds then box:SetResizeBounds(minW, minH, maxW, maxH) end
+    box:RegisterForDrag("LeftButton")
+    box:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    box:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); Save(self, key) end)
+    local edge = {}
+    for i, p in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }) do
+        local t = box:CreateTexture(nil, "OVERLAY")
+        t:SetColorTexture(1, 0.82, 0, 0.8)
+        t:SetPoint(p[1]); t:SetPoint(p[2])
+        if i <= 2 then t:SetHeight(1) else t:SetWidth(1) end
+        edge[#edge + 1] = t
+    end
+    local lbl = box:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    lbl:SetPoint("BOTTOM", box, "TOP", 0, 2)
+    lbl:SetText(label)
+    edge[#edge + 1] = lbl
+    box.label = lbl
+    local grip = CreateFrame("Button", nil, box)
+    grip:SetSize(14, 14)
+    grip:SetPoint("BOTTOMRIGHT")
+    grip:SetFrameLevel(box:GetFrameLevel() + 10)
+    grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    grip:SetScript("OnMouseDown", function() box:StartSizing("BOTTOMRIGHT") end)
+    grip:SetScript("OnMouseUp", function() box:StopMovingOrSizing(); Save(box, key) end)
+    edge[#edge + 1] = grip
+    if square then
+        box:SetScript("OnSizeChanged", function(self, w, h)
+            if w and h and math.abs(w - h) > 0.5 then self:SetHeight(w) end
+        end)
+    end
+    box.editParts = edge
+end
+Editable(natBox, "fishNat", "Nat Pagle", 50, 60, 400, 500)
+Editable(badge, "fishPole", "", 20, 20, 160, 160, true)
+
+local function Unlocked()
+    local db = RunAwayLittleGirlDB
+    return db and db.fishingLocked == false
+end
+
+local function ApplyLock()
+    local open = Unlocked() and true or false
+    for _, box in ipairs({ natBox, badge }) do
+        box:EnableMouse(open)
+        for _, part in ipairs(box.editParts or {}) do part:SetShown(open) end
+    end
+end
+
+function ns.FishingPlace()
+    badge.label:SetText(ns.L.CFG_FISHING_POLE_LABEL)
+    Place(natBox, "fishNat", NAT_DEF)
+    Place(badge, "fishPole", POLE_DEF)
+    ApplyLock()
+end
+
+function ns.FishingResetPosition()
+    local db = RunAwayLittleGirlDB
+    if db then db.fishNat, db.fishPole = nil, nil end
+    ns.FishingPlace()
+end
+
 -- Options: db.fishingNat (Nat Pagle), db.fishingIcon (the pole icon), each on/off;
--- the frame shows while the pole is equipped (or during a test) and one of them is on.
+-- the frame shows while the pole is equipped (or during a test, or while unlocked
+-- to be placed) and one of them is on.
 local testing = false
 function ns.UpdateFishing()
     local db = RunAwayLittleGirlDB
     local nat = not (db and db.fishingNat == false)
     local pole = not (db and db.fishingIcon == false)
-    local on = db and (nat or pole) and (testing or ns.FishingPoleEquipped())
+    ApplyLock()
+    local on = db and (nat or pole) and (testing or Unlocked() or ns.FishingPoleEquipped())
     if on then
         icon:SetTexture((GetInventoryItemTexture and GetInventoryItemTexture("player", 16)) or FALLBACK)
     end
     badge:SetShown(pole)
     frame:SetShown(on and true or false)
+    natBox:SetShown(nat)
     if on and nat then
         if try == 0 then Next() elseif loaded then model:Show(); Pose() end
     else
@@ -270,6 +371,7 @@ ev:SetScript("OnEvent", function(_, event, slot)
         return
     end
     if event == "PLAYER_EQUIPMENT_CHANGED" and slot ~= 16 then return end
+    if event == "PLAYER_ENTERING_WORLD" then ns.FishingPlace() end
     PoleChanged()
     ns.UpdateFishing()
 end)

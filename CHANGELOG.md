@@ -1,6 +1,7 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
 ## Unreleased
+- Fishing: **Nat Pagle and the fishing pole can be moved and resized**, each on its own: untick "Lock Nat and the pole", both show (outlined, with a name), drag to move, pull the corner to resize (the pole stays round); tick again when done. "Reset their position" puts them back in the middle.
 - Options: changing the language changes the options page right away (it used to need /reload) — MilkshaksonUI v9.
 - Fishing options: show Nat Pagle, show the fishing pole, play the warning — each on or off; **Test everything** shows both for 8 seconds (no pole needed) and plays the warning.
 - **Fishing pole warning**: with a fishing pole equipped, a warning sound plays — the game's "quest failed" horn by default, an alarm clock, the raid warning, or **spoken** ("You have a fishing pole equipped but you are not fishing.") with the game's text to speech and the voice set in Options > Accessibility (Options) — and Nat Pagle calls you, **in combat** — at once when the fight starts, then every 8 seconds while it lasts — and out of combat after a minute without fishing, then every minute, until you cast again or take the pole off. Option "Warning sound: in combat, or 1 minute without fishing" (on), with a test button.

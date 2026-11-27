@@ -23,6 +23,7 @@ local defaults = {
     slotH = 120,
     fishingNat = true,  -- Nat Pagle in the middle of the screen while a fishing pole is equipped
     fishingIcon = true, -- the fishing pole icon there
+    fishingLocked = true, -- off: Nat and the pole can be dragged and resized (both shown to place them)
     fishingIdle = true, -- warning sound after a minute with the pole equipped and no fishing
     fishingSound = "failed", -- failed (quest failed horn) / alarm / raid
 }

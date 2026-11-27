@@ -31,6 +31,9 @@ function ns:BuildOptions(db)
         function(v) db.fishingNat = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
     UI:Check(p, L.CFG_FISHING_ICON, L.CFG_FISHING_ICON_TIP, function() return db.fishingIcon end,
         function(v) db.fishingIcon = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
+    UI:Check(p, L.CFG_FISHING_LOCK, L.CFG_FISHING_LOCK_TIP, function() return db.fishingLocked end,
+        function(v) db.fishingLocked = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
+    UI:Buttons(p, { { L.CFG_FISHING_RESET, function() if ns.FishingResetPosition then ns.FishingResetPosition() end end } })
     UI:Check(p, L.CFG_FISHING_IDLE, L.CFG_FISHING_IDLE_TIP, function() return db.fishingIdle end, function(v) db.fishingIdle = v end)
     UI:Note(p, L.CFG_FISHING_SOUND)
     UI:Radio(p, { { "failed", L.SOUND_FAILED }, { "alarm", L.SOUND_ALARM }, { "raid", L.SOUND_RAID }, { "speak", L.SOUND_SPEAK } },
