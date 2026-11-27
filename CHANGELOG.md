@@ -1,7 +1,7 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
 ## Unreleased
-- **Fishing pole icon**: while a fishing pole is equipped, a round fishing pole icon shows in the middle of the screen (so you remember to switch back to your weapon). Visual only, takes no clicks. Option "Fishing" > "Fishing pole icon in the middle of the screen" (on).
+- **Nat Pagle while fishing**: while a fishing pole is equipped, Nat Pagle (the game's own animated NPC model: he fishes, and now and then talks, waves or cheers) shows in the middle of the screen with a round fishing pole icon at his feet, so you remember to switch back to your weapon. Visual only, takes no clicks. If his model can't be loaded, only the pole icon shows. Option "Fishing" > "Nat Pagle and a fishing pole in the middle of the screen" (on).
 
 ## 2.4.2
 - Options: "Buy me a coffee" moved to the top of the page, highlighted, with PayPal and PIX buttons that show the link ready to copy (addons can't open the browser). Shared UI library v8.
