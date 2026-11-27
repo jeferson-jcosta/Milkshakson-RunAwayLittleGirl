@@ -31,7 +31,7 @@ function ns:BuildOptions(db)
         function(v) db.fishingIcon = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
     UI:Check(p, L.CFG_FISHING_IDLE, L.CFG_FISHING_IDLE_TIP, function() return db.fishingIdle end, function(v) db.fishingIdle = v end)
     UI:Note(p, L.CFG_FISHING_SOUND)
-    UI:Radio(p, { { "failed", L.SOUND_FAILED }, { "alarm", L.SOUND_ALARM }, { "raid", L.SOUND_RAID } },
+    UI:Radio(p, { { "failed", L.SOUND_FAILED }, { "alarm", L.SOUND_ALARM }, { "raid", L.SOUND_RAID }, { "speak", L.SOUND_SPEAK } },
         function() return db.fishingSound or "failed" end,
         function(v) db.fishingSound = v; if ns.FishingIdleWarn then ns.FishingIdleWarn() end end)
     UI:Buttons(p, { { L.CFG_FISHING_IDLE_TRY, function() if ns.FishingIdleWarn then ns.FishingIdleWarn() end end } })

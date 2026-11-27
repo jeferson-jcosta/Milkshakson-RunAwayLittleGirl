@@ -160,7 +160,11 @@ local combatWarn = 0
 local function Now() return GetTime and GetTime() or 0 end
 
 -- Warning sounds (db.fishingSound): the game's "quest failed" horn (default:
--- sounds like something is wrong), an alarm clock, or the raid warning.
+-- sounds like something is wrong), an alarm clock, the raid warning, or a
+-- spoken sentence with the game's text to speech (C_VoiceChat.SpeakText, the
+-- voice / speed / volume set in Options > Accessibility > Text to Speech; the
+-- voices are the computer's, not Nat Pagle's: the game has no recorded lines
+-- of his to say this).
 ns.FISHING_SOUNDS = {
     { "failed", "IG_QUEST_FAILED", 847 },
     { "alarm", "ALARM_CLOCK_WARNING_3", 12889 },
@@ -173,10 +177,30 @@ function ns.FishingSound(key)
     return (SOUNDKIT and SOUNDKIT.IG_QUEST_FAILED) or 847
 end
 
-function ns.FishingIdleWarn()
+local function Speak(text)
+    local V, S = C_VoiceChat, C_TTSSettings
+    if not (V and V.SpeakText and S and S.GetVoiceOptionID) then return false end
+    local std = Enum and Enum.TtsVoiceType and Enum.TtsVoiceType.Standard or 0
+    local ok, voice = pcall(S.GetVoiceOptionID, std)
+    if not ok or not voice then
+        local vs = V.GetTtsVoices and select(2, pcall(V.GetTtsVoices))
+        voice = type(vs) == "table" and vs[1] and vs[1].voiceID
+    end
+    if not voice then return false end
+    local rate = (S.GetSpeechRate and select(2, pcall(S.GetSpeechRate))) or 0
+    local vol = (S.GetSpeechVolume and select(2, pcall(S.GetSpeechVolume))) or 100
+    return (pcall(V.SpeakText, voice, text, tonumber(rate) or 0, tonumber(vol) or 100, false))
+end
+ns.FishingSpeak = Speak
+
+function ns.FishingIdleWarn(kind)
     local db = RunAwayLittleGirlDB
-    local s = ns.FishingSound(db and db.fishingSound or "failed")
-    if PlaySound then pcall(PlaySound, s, "Master") end
+    local key = db and db.fishingSound or "failed"
+    local spoken = key == "speak" and Speak(kind == "idle" and ns.L.SAY_IDLE or ns.L.SAY_COMBAT)
+    if not spoken then
+        local s = ns.FishingSound(key == "speak" and "failed" or key)
+        if PlaySound then pcall(PlaySound, s, "Master") end
+    end
     if loaded and frame:IsShown() then
         Anim(64)                 -- EmoteTalkExclamation: Nat calls you
         busy = 2.5
@@ -191,7 +215,7 @@ local function IdleTick()
         lastFish = now
         if now - combatWarn >= COMBAT_REPEAT then
             combatWarn = now
-            ns.FishingIdleWarn()
+            ns.FishingIdleWarn("combat")
         end
         return
     end
@@ -199,7 +223,7 @@ local function IdleTick()
     if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then lastFish = now; return end
     if now - lastFish >= IDLE and now - lastWarn >= IDLE then
         lastWarn = now
-        ns.FishingIdleWarn()
+        ns.FishingIdleWarn("idle")
     end
 end
 ns.FishingIdleTick = IdleTick

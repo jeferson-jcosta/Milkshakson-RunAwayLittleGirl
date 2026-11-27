@@ -1,7 +1,7 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
 ## Unreleased
-- **Fishing pole warning**: with a fishing pole equipped, a warning sound plays — the game's "quest failed" horn by default, or an alarm clock or the raid warning (Options) — and Nat Pagle calls you, **in combat** — at once when the fight starts, then every 8 seconds while it lasts — and out of combat after a minute without fishing, then every minute, until you cast again or take the pole off. Option "Warning sound: in combat, or 1 minute without fishing" (on), with a test button.
+- **Fishing pole warning**: with a fishing pole equipped, a warning sound plays — the game's "quest failed" horn by default, an alarm clock, the raid warning, or **spoken** ("You are fighting with a fishing pole! Switch to your weapon!" / "Hey, you are not fishing.") with the game's text to speech and the voice set in Options > Accessibility (Options) — and Nat Pagle calls you, **in combat** — at once when the fight starts, then every 8 seconds while it lasts — and out of combat after a minute without fishing, then every minute, until you cast again or take the pole off. Option "Warning sound: in combat, or 1 minute without fishing" (on), with a test button.
 - **Nat Pagle while fishing**: while a fishing pole is equipped, Nat Pagle (the game's own animated NPC model: he fishes, and now and then talks, waves or cheers) shows in the middle of the screen with a round fishing pole icon at his feet, so you remember to switch back to your weapon. Visual only, takes no clicks. If his model can't be loaded, only the pole icon shows. Option "Fishing" > "Nat Pagle and a fishing pole in the middle of the screen" (on).
 
 ## 2.4.2
