@@ -1,5 +1,8 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
+## Unreleased
+- Fishing: **no lure warning** — while you fish with no lure on the pole, a pulsing lure icon with "No lure!" shows where the pole icon sits. Option "Warn when fishing without a lure" (on); Test everything shows it.
+
 ## 2.5.0
 - **What's new** popup: after an update, the release notes of the new version show once (Options > "What's new" shows them again; a checkbox turns it off). MilkshaksonUI v10.
 - Fishing: **Nat Pagle and the pole hide while you fish** — they only show with the pole equipped and no cast going (the "you are not fishing" reminder).

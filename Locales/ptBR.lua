@@ -84,3 +84,6 @@ L.CFG_RUNNING_TIP = "Desligado: o retrovisor aparece também parado, quando a vi
 L.CFG_TRIGGER    = "Aparece quando o aviso de vida baixa do próprio jogo (bordas vermelhas da tela) dispara durante uma perseguição."
 L.NO_WARNING     = "este cliente não tem o aviso de vida baixa do jogo, então o retrovisor não pode ser ativado."
 L.WHATS_NEW = "Novidades"
+L.NO_LURE = "Sem isca!"
+L.CFG_FISHING_LURE = "Avisar quando pescar sem isca"
+L.CFG_FISHING_LURE_TIP = "Enquanto você pesca sem isca na vara, um ícone de isca pulsando com \"Sem isca!\" aparece onde fica o ícone da vara. O Testar tudo mostra também."

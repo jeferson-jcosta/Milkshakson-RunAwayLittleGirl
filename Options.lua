@@ -31,6 +31,8 @@ function ns:BuildOptions(db)
         function(v) db.fishingNat = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
     UI:Check(p, L.CFG_FISHING_ICON, L.CFG_FISHING_ICON_TIP, function() return db.fishingIcon end,
         function(v) db.fishingIcon = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
+    UI:Check(p, L.CFG_FISHING_LURE, L.CFG_FISHING_LURE_TIP, function() return db.fishingLure end,
+        function(v) db.fishingLure = v; if ns.UpdateLure then ns.UpdateLure() end end)
     UI:Check(p, L.CFG_FISHING_LOCK, L.CFG_FISHING_LOCK_TIP, function() return db.fishingLocked end,
         function(v) db.fishingLocked = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
     UI:Buttons(p, { { L.CFG_FISHING_RESET, function() if ns.FishingResetPosition then ns.FishingResetPosition() end end } })

@@ -84,3 +84,6 @@ L.CFG_RUNNING_TIP = "Off: the mirror also appears when your health reaches the l
 L.CFG_TRIGGER    = "Appears when the game's own low-health warning (red screen edges) fires during a chase."
 L.NO_WARNING     = "this client has no low-health warning, so the mirror can't be triggered."
 L.WHATS_NEW = "What's new"
+L.NO_LURE = "No lure!"
+L.CFG_FISHING_LURE = "Warn when fishing without a lure"
+L.CFG_FISHING_LURE_TIP = "While you fish with no lure on the pole, a pulsing lure icon with \"No lure!\" shows where the pole icon sits. Test everything shows it too."

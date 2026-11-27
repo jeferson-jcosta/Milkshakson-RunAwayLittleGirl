@@ -56,9 +56,10 @@ icon:SetPoint("TOPLEFT", 2, -2)
 icon:SetPoint("BOTTOMRIGHT", -2, 2)
 frame.icon, frame.ring, frame.pole = icon, ring, badge
 
-local function Round(tex)
-    if not (badge.CreateMaskTexture and tex.AddMaskTexture) then return end
-    local ok, m = pcall(badge.CreateMaskTexture, badge)
+local function Round(tex, owner)
+    owner = owner or badge     -- the mask lives on a shown frame of its own (a hidden owner hides it)
+    if not (owner.CreateMaskTexture and tex.AddMaskTexture) then return end
+    local ok, m = pcall(owner.CreateMaskTexture, owner)
     if not ok or not m then return end
     pcall(m.SetTexture, m, MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     m:SetAllPoints(tex)
@@ -240,6 +241,57 @@ function ns.IsFishing()
     return ok and name ~= nil
 end
 
+---------------------------------------------------------------------------
+-- No lure: while fishing with no lure on the pole (no temporary enchant on
+-- the main hand: GetWeaponEnchantInfo), a pulsing lure icon with "No lure!"
+-- shows where the pole icon sits (Nat and the pole hide while you fish).
+-- Option db.fishingLure (on). Visual only, takes no clicks.
+---------------------------------------------------------------------------
+local LURE_ICON = "Interface\\Icons\\INV_Misc_Orb_03"
+local lure = CreateFrame("Frame", "RunAwayLittleGirlLure", UIParent)
+lure:SetSize(48, 48)
+lure:SetPoint("CENTER", badge, "CENTER")
+lure:SetFrameStrata("MEDIUM")
+lure:EnableMouse(false)
+lure.ring = lure:CreateTexture(nil, "ARTWORK", nil, 1)
+lure.ring:SetAllPoints()
+lure.ring:SetColorTexture(0.9, 0.2, 0.15, 0.95)
+lure.icon = lure:CreateTexture(nil, "ARTWORK", nil, 2)
+lure.icon:SetPoint("TOPLEFT", 3, -3)
+lure.icon:SetPoint("BOTTOMRIGHT", -3, 3)
+lure.icon:SetTexture(LURE_ICON)
+Round(lure.ring, lure)
+Round(lure.icon, lure)
+lure.text = lure:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+lure.text:SetPoint("TOP", lure, "BOTTOM", 0, -4)
+if lure.text.SetFont and STANDARD_TEXT_FONT then lure.text:SetFont(STANDARD_TEXT_FONT, 16, "OUTLINE") end
+lure.text:SetTextColor(1, 0.3, 0.25)
+lure.t = 0
+lure:SetScript("OnUpdate", function(self, el)
+    self.t = (self.t or 0) + (el or 0)
+    self:SetAlpha(0.55 + 0.45 * math.abs(math.sin(self.t * 3)))   -- pulse
+end)
+lure:Hide()
+frame.lure = lure
+
+-- Is there a lure (temporary enchant) on the main hand?
+function ns.HasLure()
+    if not GetWeaponEnchantInfo then return true end   -- can't tell: never warn
+    local ok, has = pcall(GetWeaponEnchantInfo)
+    if not ok or (issecretvalue and issecretvalue(has)) then return true end
+    return has and true or false
+end
+
+function ns.UpdateLure(force)
+    local db = RunAwayLittleGirlDB
+    local on = force or (db and db.fishingLure ~= false and ns.FishingPoleEquipped() and ns.IsFishing() and not ns.HasLure())
+    if on then
+        lure:SetSize(math.max(32, badge:GetWidth() or 48), math.max(32, badge:GetHeight() or 48))
+        lure.text:SetText(ns.L.NO_LURE)
+    end
+    lure:SetShown(on and true or false)
+end
+
 -- Options: db.fishingNat (Nat Pagle), db.fishingIcon (the pole icon), each on/off;
 -- the frame shows while the pole is equipped (or during a test, or while unlocked
 -- to be placed) and one of them is on.
@@ -268,9 +320,10 @@ end
 function ns.FishingTest()
     testing = true
     ns.UpdateFishing()
+    if ns.UpdateLure then ns.UpdateLure(true) end
     if ns.FishingIdleWarn then ns.FishingIdleWarn("idle") end
     if C_Timer and C_Timer.After then
-        C_Timer.After(8, function() testing = false; ns.UpdateFishing() end)
+        C_Timer.After(8, function() testing = false; ns.UpdateFishing(); ns.UpdateLure() end)
     end
 end
 
@@ -367,10 +420,15 @@ ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
 ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+pcall(ev.RegisterEvent, ev, "UNIT_INVENTORY_CHANGED")
 ev:RegisterEvent("PLAYER_REGEN_DISABLED")
 ev:SetScript("OnEvent", function(_, event, slot)
+    if event == "UNIT_INVENTORY_CHANGED" then
+        if slot == "player" then ns.UpdateLure() end
+        return
+    end
     if event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
-        if slot == "player" then lastFish, lastWarn = Now(), 0; ns.UpdateFishing() end
+        if slot == "player" then lastFish, lastWarn = Now(), 0; ns.UpdateFishing(); ns.UpdateLure() end
         return
     end
     if event == "PLAYER_REGEN_DISABLED" then
