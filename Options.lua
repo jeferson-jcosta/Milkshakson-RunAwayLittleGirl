@@ -55,6 +55,11 @@ function ns:BuildOptions(db)
 
     UI:Buttons(p, { { L.WHATS_NEW, function() if ns.ShowWhatsNew then ns:ShowWhatsNew(true) end end } })
 
+    UI:Section(p, L.CFG_LOOK)
+    UI:Note(p, L.CFG_THEME)
+    UI:Radio(p, { { "auto", L.CFG_THEME_AUTO }, { "alliance", L.CFG_THEME_ALLIANCE }, { "horde", L.CFG_THEME_HORDE } },
+        function() return db.theme or "auto" end, function(v) db.theme = v; ns.Theme:Apply() end)
+
     UI:Section(p, L.CFG_LANGUAGE)
     UI:Language(p, ns, db, nil, L.CFG_LANG_NOTE)
 

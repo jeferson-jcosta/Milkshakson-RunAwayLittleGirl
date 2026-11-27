@@ -18,6 +18,7 @@ Locales\enUS.lua
 
 # Language packs (optional)
 Locales\ptBR.lua
+Theme.lua
 
 RunAwayLittleGirl.lua
 Fishing.lua

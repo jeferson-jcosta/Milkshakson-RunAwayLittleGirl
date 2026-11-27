@@ -138,6 +138,7 @@ mirror:SetBackdrop({
     insets = { left = 5, right = 5, top = 5, bottom = 5 },
 })
 mirror:SetBackdropColor(0.08, 0.12, 0.16, 0.85)
+if ns.Theme then ns.Theme:Skin(mirror, "window", 0, 0.85) end
 mirror:Hide()
 
 mirror:SetScript("OnDragStart", function(self) if not db.locked then self:StartMoving() end end)
@@ -580,6 +581,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
             db.locked, db.point, db.migrated12 = false, nil, true
         end
         ns:ApplyLocale(db.locale)
+        if ns.Theme then ns.Theme:Init(db); ns.Theme:Apply() end
         if ns.BuildOptions and not ns.optionsCategory then ns:BuildOptions(db) end
         mirror:EnableMouse(not db.locked)
         grip:SetShown(not db.locked)
