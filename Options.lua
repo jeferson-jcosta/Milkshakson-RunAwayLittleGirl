@@ -26,6 +26,10 @@ function ns:BuildOptions(db)
         { L.CFG_RESET, function() SlashCmdList.RUNAWAYLITTLEGIRL("reset") end },
     })
 
+    UI:Section(p, L.CFG_FISHING)
+    UI:Check(p, L.CFG_FISHING_ICON, L.CFG_FISHING_ICON_TIP, function() return db.fishingIcon end,
+        function(v) db.fishingIcon = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
+
     UI:Section(p, L.CFG_LANGUAGE)
     UI:Language(p, ns, db, nil, L.CFG_LANG_NOTE)
 

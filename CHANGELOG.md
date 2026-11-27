@@ -1,5 +1,8 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
+## Unreleased
+- **Fishing pole icon**: while a fishing pole is equipped, a round fishing pole icon shows in the middle of the screen (so you remember to switch back to your weapon). Visual only, takes no clicks. Option "Fishing" > "Fishing pole icon in the middle of the screen" (on).
+
 ## 2.4.2
 - Options: "Buy me a coffee" moved to the top of the page, highlighted, with PayPal and PIX buttons that show the link ready to copy (addons can't open the browser). Shared UI library v8.
 

@@ -21,6 +21,7 @@ local defaults = {
     locale = nil,
     slotW = 96,       -- size of each mob slot (changed with the resize grip)
     slotH = 120,
+    fishingIcon = true, -- fishing pole icon in the middle of the screen while one is equipped
 }
 local MIN_SW, MIN_SH, MAX_SW, MAX_SH = 60, 80, 320, 420
 

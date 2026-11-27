@@ -20,4 +20,5 @@ Locales\enUS.lua
 Locales\ptBR.lua
 
 RunAwayLittleGirl.lua
+Fishing.lua
 Options.lua
