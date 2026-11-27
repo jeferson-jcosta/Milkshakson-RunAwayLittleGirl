@@ -22,6 +22,7 @@ local defaults = {
     slotW = 96,       -- size of each mob slot (changed with the resize grip)
     slotH = 120,
     fishingIcon = true, -- fishing pole icon in the middle of the screen while one is equipped
+    fishingIdle = true, -- warning sound after a minute with the pole equipped and no fishing
 }
 local MIN_SW, MIN_SH, MAX_SW, MAX_SH = 60, 80, 320, 420
 

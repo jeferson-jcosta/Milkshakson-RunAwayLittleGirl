@@ -29,6 +29,8 @@ function ns:BuildOptions(db)
     UI:Section(p, L.CFG_FISHING)
     UI:Check(p, L.CFG_FISHING_ICON, L.CFG_FISHING_ICON_TIP, function() return db.fishingIcon end,
         function(v) db.fishingIcon = v; if ns.UpdateFishing then ns.UpdateFishing() end end)
+    UI:Check(p, L.CFG_FISHING_IDLE, L.CFG_FISHING_IDLE_TIP, function() return db.fishingIdle end, function(v) db.fishingIdle = v end)
+    UI:Buttons(p, { { L.CFG_FISHING_IDLE_TRY, function() if ns.FishingIdleWarn then ns.FishingIdleWarn() end end } })
 
     UI:Section(p, L.CFG_LANGUAGE)
     UI:Language(p, ns, db, nil, L.CFG_LANG_NOTE)

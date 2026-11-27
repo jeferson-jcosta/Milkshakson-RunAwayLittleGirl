@@ -1,6 +1,7 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
 ## Unreleased
+- **Fishing idle warning**: with a fishing pole equipped and no fishing for a minute (not in combat), a warning sound plays (again every minute) and Nat Pagle calls you, until you cast again or take the pole off. Option "Warning sound after 1 minute without fishing" (on), with a test button.
 - **Nat Pagle while fishing**: while a fishing pole is equipped, Nat Pagle (the game's own animated NPC model: he fishes, and now and then talks, waves or cheers) shows in the middle of the screen with a round fishing pole icon at his feet, so you remember to switch back to your weapon. Visual only, takes no clicks. If his model can't be loaded, only the pole icon shows. Option "Fishing" > "Nat Pagle and a fishing pole in the middle of the screen" (on).
 
 ## 2.4.2

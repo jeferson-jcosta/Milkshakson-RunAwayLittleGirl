@@ -146,10 +146,63 @@ function ns.UpdateFishing()
     end
 end
 
+---------------------------------------------------------------------------
+-- Idle warning: pole equipped and no fishing for IDLE seconds -> a warning
+-- sound (again every IDLE seconds) until you cast again or take the pole off.
+-- Fishing = the player channeling (the cast is a channel); not in combat.
+-- Option db.fishingIdle (on).
+---------------------------------------------------------------------------
+local IDLE = 60
+local lastFish, lastWarn, poleOn = 0, 0, false
+local function Now() return GetTime and GetTime() or 0 end
+
+function ns.FishingIdleWarn()
+    local s = SOUNDKIT and SOUNDKIT.RAID_WARNING or 8959
+    if PlaySound then pcall(PlaySound, s, "Master") end
+    if loaded and frame:IsShown() then
+        Anim(64)                 -- EmoteTalkExclamation: Nat calls you
+        busy = 2.5
+    end
+end
+
+local function IdleTick()
+    local db = RunAwayLittleGirlDB
+    if not (poleOn and db and db.fishingIdle ~= false) then return end
+    local now = Now()
+    if UnitChannelInfo and UnitChannelInfo("player") then lastFish = now; return end
+    if InCombatLockdown and InCombatLockdown() then lastFish = now; return end
+    if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then lastFish = now; return end
+    if now - lastFish >= IDLE and now - lastWarn >= IDLE then
+        lastWarn = now
+        ns.FishingIdleWarn()
+    end
+end
+ns.FishingIdleTick = IdleTick
+
+local function PoleChanged()
+    local on = ns.FishingPoleEquipped() and true or false
+    if on and not poleOn then lastFish, lastWarn = Now(), 0 end   -- the minute starts when you equip it
+    poleOn = on
+end
+
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 ev:SetScript("OnEvent", function(_, event, slot)
+    if event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+        if slot == "player" then lastFish, lastWarn = Now(), 0 end
+        return
+    end
     if event == "PLAYER_EQUIPMENT_CHANGED" and slot ~= 16 then return end
+    PoleChanged()
     ns.UpdateFishing()
+end)
+local acc = 0
+ev:SetScript("OnUpdate", function(_, el)
+    acc = acc + (el or 0)
+    if acc < 1 then return end
+    acc = 0
+    IdleTick()
 end)
