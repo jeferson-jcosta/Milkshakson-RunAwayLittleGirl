@@ -147,13 +147,16 @@ function ns.UpdateFishing()
 end
 
 ---------------------------------------------------------------------------
--- Idle warning: pole equipped and no fishing for IDLE seconds -> a warning
--- sound (again every IDLE seconds) until you cast again or take the pole off.
--- Fishing = the player channeling (the cast is a channel); not in combat.
--- Option db.fishingIdle (on).
+-- Warnings with the pole equipped (option db.fishingIdle, on):
+--  * in combat (the main case: fighting with a fishing pole): at once when
+--    combat starts, then every COMBAT_REPEAT seconds while it lasts;
+--  * out of combat: no fishing for IDLE seconds, then again every IDLE seconds,
+--    until you cast again or take the pole off.
+-- Fishing = the player channeling (the cast is a channel).
 ---------------------------------------------------------------------------
-local IDLE = 60
+local IDLE, COMBAT_REPEAT = 60, 8
 local lastFish, lastWarn, poleOn = 0, 0, false
+local combatWarn = 0
 local function Now() return GetTime and GetTime() or 0 end
 
 function ns.FishingIdleWarn()
@@ -169,8 +172,15 @@ local function IdleTick()
     local db = RunAwayLittleGirlDB
     if not (poleOn and db and db.fishingIdle ~= false) then return end
     local now = Now()
+    if InCombatLockdown and InCombatLockdown() then
+        lastFish = now
+        if now - combatWarn >= COMBAT_REPEAT then
+            combatWarn = now
+            ns.FishingIdleWarn()
+        end
+        return
+    end
     if UnitChannelInfo and UnitChannelInfo("player") then lastFish = now; return end
-    if InCombatLockdown and InCombatLockdown() then lastFish = now; return end
     if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then lastFish = now; return end
     if now - lastFish >= IDLE and now - lastWarn >= IDLE then
         lastWarn = now
@@ -190,9 +200,15 @@ ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
 ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+ev:RegisterEvent("PLAYER_REGEN_DISABLED")
 ev:SetScript("OnEvent", function(_, event, slot)
     if event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
         if slot == "player" then lastFish, lastWarn = Now(), 0 end
+        return
+    end
+    if event == "PLAYER_REGEN_DISABLED" then
+        combatWarn = 0          -- combat starts with the pole: warn right away
+        IdleTick()
         return
     end
     if event == "PLAYER_EQUIPMENT_CHANGED" and slot ~= 16 then return end
