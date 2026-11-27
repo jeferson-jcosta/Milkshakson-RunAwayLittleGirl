@@ -21,7 +21,8 @@ local defaults = {
     locale = nil,
     slotW = 96,       -- size of each mob slot (changed with the resize grip)
     slotH = 120,
-    fishingIcon = true, -- fishing pole icon in the middle of the screen while one is equipped
+    fishingNat = true,  -- Nat Pagle in the middle of the screen while a fishing pole is equipped
+    fishingIcon = true, -- the fishing pole icon there
     fishingIdle = true, -- warning sound after a minute with the pole equipped and no fishing
     fishingSound = "failed", -- failed (quest failed horn) / alarm / raid
 }

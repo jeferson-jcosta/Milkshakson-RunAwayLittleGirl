@@ -95,7 +95,8 @@ end
 
 model:SetScript("OnModelLoaded", function()
     loaded = true
-    model:Show()
+    local db = RunAwayLittleGirlDB
+    model:SetShown(not (db and db.fishingNat == false))
     Note("loaded")
     Pose()
 end)
@@ -134,15 +135,33 @@ function ns.FishingPoleEquipped()
     return classID == 2 and subclassID == pole
 end
 
+-- Options: db.fishingNat (Nat Pagle), db.fishingIcon (the pole icon), each on/off;
+-- the frame shows while the pole is equipped (or during a test) and one of them is on.
+local testing = false
 function ns.UpdateFishing()
     local db = RunAwayLittleGirlDB
-    local on = db and db.fishingIcon ~= false and ns.FishingPoleEquipped()
+    local nat = not (db and db.fishingNat == false)
+    local pole = not (db and db.fishingIcon == false)
+    local on = db and (nat or pole) and (testing or ns.FishingPoleEquipped())
     if on then
         icon:SetTexture((GetInventoryItemTexture and GetInventoryItemTexture("player", 16)) or FALLBACK)
     end
+    badge:SetShown(pole)
     frame:SetShown(on and true or false)
-    if on then
-        if try == 0 then Next() elseif loaded then Pose() end
+    if on and nat then
+        if try == 0 then Next() elseif loaded then model:Show(); Pose() end
+    else
+        model:Hide()
+    end
+end
+
+-- Test everything: Nat and the pole for 8 s (even without a pole equipped) and the warning.
+function ns.FishingTest()
+    testing = true
+    ns.UpdateFishing()
+    if ns.FishingIdleWarn then ns.FishingIdleWarn("idle") end
+    if C_Timer and C_Timer.After then
+        C_Timer.After(8, function() testing = false; ns.UpdateFishing() end)
     end
 end
 
@@ -196,7 +215,7 @@ ns.FishingSpeak = Speak
 function ns.FishingIdleWarn(kind)
     local db = RunAwayLittleGirlDB
     local key = db and db.fishingSound or "failed"
-    local spoken = key == "speak" and Speak(kind == "idle" and ns.L.SAY_IDLE or ns.L.SAY_COMBAT)
+    local spoken = key == "speak" and Speak(ns.L.SAY_POLE)
     if not spoken then
         local s = ns.FishingSound(key == "speak" and "failed" or key)
         if PlaySound then pcall(PlaySound, s, "Master") end
