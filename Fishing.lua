@@ -3,8 +3,10 @@
 -- equipped (main hand). Visual only: it takes no clicks, so it never blocks the
 -- bobber. Option db.fishingIcon (on by default).
 --
--- The model is loaded by NPC id (12919 = Nat Pagle, Dustwallow Marsh; later
--- Nat Pagles as fallbacks); models load asynchronously, each try gets 2 s.
+-- The model is loaded by its creature display (13099, Nat Pagle's model on
+-- Wowhead, classic and MoP); by NPC id only as fallback (SetCreature showed
+-- nothing in game: the client needs the NPC cached). Models load
+-- asynchronously, each try gets 2 s.
 -- If none loads, only the pole icon shows. What happened is kept in
 -- RunAwayLittleGirlDB.natPagle (SavedVariables) for diagnostics.
 local _, ns = ...
@@ -14,7 +16,7 @@ local SIZE = 44                -- pole icon
 local FALLBACK = "Interface\\Icons\\INV_Fishingpole_02"
 local MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 local POLE = 20                -- Enum.ItemWeaponSubclass.Fishingpole
-local TRIES = { 12919, 63721, 102639 }
+local TRIES = { { "display", 13099 }, { "creature", 12919 }, { "creature", 63721 } }
 -- AnimationData: FishingLoop (falls back to Stand on models without it), Stand,
 -- EmoteTalk, EmoteWave, EmoteCheer: he fishes, and now and then talks or waves.
 local FISH, STAND, IDLE = 134, 0, { 60, 67, 68 }
@@ -63,7 +65,8 @@ local try, loaded = 0, false
 local function Note(what)
     local db = RunAwayLittleGirlDB
     if not db then return end
-    db.natPagle = { try = try, npc = TRIES[try], what = what, t = time and time() or 0 }
+    local t = TRIES[try]
+    db.natPagle = { try = try, how = t and t[1], id = t and t[2], what = what, t = time and time() or 0 }
 end
 local function Anim(a) if model.SetAnimation then pcall(model.SetAnimation, model, a) end end
 local function Pose()
@@ -75,14 +78,14 @@ end
 local Next
 Next = function()
     try = try + 1
-    local id = TRIES[try]
-    if not id then
+    local t = TRIES[try]
+    if not t then
         Note("none loaded")
         model:Hide()
         return
     end
     if model.ClearModel then pcall(model.ClearModel, model) end
-    local ok = pcall(model.SetCreature, model, id)
+    local ok = pcall(t[1] == "display" and model.SetDisplayInfo or model.SetCreature, model, t[2])
     Note(ok and "set" or "error")
     if C_Timer and C_Timer.After then
         local mine = try
