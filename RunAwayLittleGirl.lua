@@ -23,6 +23,7 @@ local defaults = {
     slotH = 120,
     fishingIcon = true, -- fishing pole icon in the middle of the screen while one is equipped
     fishingIdle = true, -- warning sound after a minute with the pole equipped and no fishing
+    fishingSound = "failed", -- failed (quest failed horn) / alarm / raid
 }
 local MIN_SW, MIN_SH, MAX_SW, MAX_SH = 60, 80, 320, 420
 

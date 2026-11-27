@@ -159,8 +159,23 @@ local lastFish, lastWarn, poleOn = 0, 0, false
 local combatWarn = 0
 local function Now() return GetTime and GetTime() or 0 end
 
+-- Warning sounds (db.fishingSound): the game's "quest failed" horn (default:
+-- sounds like something is wrong), an alarm clock, or the raid warning.
+ns.FISHING_SOUNDS = {
+    { "failed", "IG_QUEST_FAILED", 847 },
+    { "alarm", "ALARM_CLOCK_WARNING_3", 12889 },
+    { "raid", "RAID_WARNING", 8959 },
+}
+function ns.FishingSound(key)
+    for _, s in ipairs(ns.FISHING_SOUNDS) do
+        if s[1] == key then return (SOUNDKIT and SOUNDKIT[s[2]]) or s[3] end
+    end
+    return (SOUNDKIT and SOUNDKIT.IG_QUEST_FAILED) or 847
+end
+
 function ns.FishingIdleWarn()
-    local s = SOUNDKIT and SOUNDKIT.RAID_WARNING or 8959
+    local db = RunAwayLittleGirlDB
+    local s = ns.FishingSound(db and db.fishingSound or "failed")
     if PlaySound then pcall(PlaySound, s, "Master") end
     if loaded and frame:IsShown() then
         Anim(64)                 -- EmoteTalkExclamation: Nat calls you
