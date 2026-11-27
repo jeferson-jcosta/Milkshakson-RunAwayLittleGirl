@@ -392,10 +392,11 @@ ev:SetScript("OnUpdate", function(_, el)
 end)
 
 ---------------------------------------------------------------------------
--- Fishing skill up: blue text rising from the middle of the screen
--- ("Fishing 76"). Option db.fishingSkillUp (on). The skill-up line comes as
--- CHAT_MSG_SKILL (or CHAT_MSG_SYSTEM) with the game's SKILL_RANK_UP format
--- ("Your skill in %s has increased to %d."); only the fishing skill counts.
+-- Skill up: blue text rising from the middle of the screen ("Mining 76").
+-- Option db.skillUpText: "prof" (default: every profession, primary and
+-- secondary), "fishing" (only fishing), "all" (also weapon / other skills),
+-- "off". The skill-up line comes as CHAT_MSG_SKILL (or CHAT_MSG_SYSTEM) with
+-- the game's SKILL_RANK_UP format ("Your skill in %s has increased to %d.").
 ---------------------------------------------------------------------------
 local function PatternFrom(fmt)
     fmt = fmt:gsub("%%%d%$", "%%")                         -- positional %1$s -> %s
@@ -420,6 +421,50 @@ local function FishingName()
     return ns.L.FISHING_NAME
 end
 
+-- names (lower case) of the character's professions; empty if the API gives none
+local function ProfNames()
+    local out = {}
+    if GetProfessions and GetProfessionInfo then
+        local list = { GetProfessions() }
+        for i = 1, 6 do
+            if list[i] then
+                local ok, name = pcall(GetProfessionInfo, list[i])
+                if ok and type(name) == "string" then out[name:lower()] = true end
+            end
+        end
+    end
+    if not next(out) and GetNumSkillLines and GetSkillLineInfo then
+        local want = { [TRADE_SKILLS or "Professions"] = true, [SECONDARY_SKILLS or "Secondary Skills"] = true }
+        local inside = false
+        for i = 1, GetNumSkillLines() or 0 do
+            local name, header = GetSkillLineInfo(i)
+            if header then inside = want[name] or false
+            elseif inside and type(name) == "string" then out[name:lower()] = true end
+        end
+    end
+    return out
+end
+
+function ns.SkillUpMode()
+    local db = RunAwayLittleGirlDB
+    if not db then return "prof" end
+    if db.skillUpText == nil and db.fishingSkillUp == false then db.skillUpText = "off" end
+    return db.skillUpText or "prof"
+end
+
+-- should a skill-up of `name` show, with the current option?
+function ns.SkillUpWanted(name)
+    local mode = ns.SkillUpMode()
+    if mode == "off" or type(name) ~= "string" then return false end
+    if mode == "all" then return true end
+    local n = name:lower()
+    local fish = FishingName()
+    if fish and n == fish:lower() then return true end
+    if mode == "fishing" then return false end
+    local profs = ProfNames()
+    return profs[n] or not next(profs)      -- no profession API: show every skill
+end
+
 local up = CreateFrame("Frame", "RunAwayLittleGirlSkillUp", UIParent)
 up:SetSize(400, 40)
 up:SetFrameStrata("HIGH")
@@ -440,9 +485,8 @@ up:SetScript("OnUpdate", function(self, el)
     if self.t >= LIFE then self:Hide() end
 end)
 
-function ns.FishingSkillUp(name, rank)
-    local db = RunAwayLittleGirlDB
-    if db and db.fishingSkillUp == false then return end
+function ns.FishingSkillUp(name, rank)      -- name nil = fishing (test button)
+    if ns.SkillUpMode() == "off" then return end
     upText:SetText(ns.L.FISHING_UP:format(name or FishingName(), tonumber(rank) or 0))
     up.t = 0
     up:SetAlpha(1)
@@ -463,6 +507,5 @@ sk:SetScript("OnEvent", function(_, _, text)
     end
     local name, rank = text:match(skillPat)
     if not name then return end
-    local fish = FishingName()
-    if fish and name:lower() == fish:lower() then ns.FishingSkillUp(name, rank) end
+    if ns.SkillUpWanted(name) then ns.FishingSkillUp(name, rank) end
 end)
