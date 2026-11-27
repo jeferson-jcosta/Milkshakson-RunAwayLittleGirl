@@ -51,6 +51,8 @@ function ns:BuildOptions(db)
         function(v) db.skillUpText = v; if v ~= "off" and ns.FishingSkillUp then ns.FishingSkillUp(nil, 76) end end)
     UI:Buttons(p, { { L.CFG_FISHING_SKILLUP_TRY, function() if ns.FishingSkillUp then ns.FishingSkillUp(nil, 76) end end } })
 
+    UI:Buttons(p, { { L.WHATS_NEW, function() if ns.ShowWhatsNew then ns:ShowWhatsNew(true) end end } })
+
     UI:Section(p, L.CFG_LANGUAGE)
     UI:Language(p, ns, db, nil, L.CFG_LANG_NOTE)
 

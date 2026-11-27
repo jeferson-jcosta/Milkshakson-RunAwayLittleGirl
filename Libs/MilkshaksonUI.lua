@@ -4,7 +4,7 @@
 -- sub-page per addon. Falls back to a standalone window if the Settings
 -- API is unavailable.
 
-local VERSION = 9
+local VERSION = 10
 local lib = _G.MilkshaksonUI
 if lib and (lib.version or 0) >= VERSION then return end
 lib = lib or {}
@@ -430,4 +430,151 @@ function lib:Support(p)
         or "Enjoying the addons? Click a field, press Ctrl+C to copy, then paste it in your browser or bank app.")
     if (S.paypal or "") ~= "" then CopyBox(p, "PayPal", S.paypal) end
     if (S.pix or "") ~= "" then CopyBox(p, PT and "PIX (Brasil)" or "PIX (Brazil)", S.pix) end
+end
+
+---------------------------------------------------------------------------
+-- What's new (v10): after an update, a popup with the release notes of the
+-- versions since the one last seen. One popup at a time (queued across the
+-- Milkshakson addons), a few seconds after login and never in combat.
+--   lib:WhatsNew{ title = "Ready Quests", version = "2.13.0", notes = ns.NOTES,
+--                 db = savedVars, lang = "ptBR", force = true (options button) }
+--   notes = { { v = "2.13.0", en = { "line", ... }, pt = { ... } }, ... } newest first
+-- db.seenVersion = last version shown; db.whatsNew == false = don't show on updates.
+---------------------------------------------------------------------------
+local function VerNum(v)
+    local a, b, c = tostring(v or ""):match("(%d+)%.?(%d*)%.?(%d*)")
+    return (tonumber(a) or 0) * 1000000 + (tonumber(b) or 0) * 1000 + (tonumber(c) or 0)
+end
+lib.VerNum = VerNum
+
+local function Markup(line)
+    line = line:gsub("%*%*(.-)%*%*", "|cffffd100%1|r")
+    line = line:gsub("`(.-)`", "|cff99ccff%1|r")
+    return line
+end
+
+function lib:WhatsNewText(o)
+    local pt = (o.lang or (PT and "ptBR" or "enUS")) == "ptBR"
+    local from = (not o.force) and o.db and o.db.seenVersion and VerNum(o.db.seenVersion) or nil
+    local out = {}
+    for _, n in ipairs(o.notes or {}) do
+        local nv = VerNum(n.v)
+        if nv <= VerNum(o.version) and (not from or nv > from) then
+            if #out > 0 then out[#out + 1] = " " end
+            out[#out + 1] = "|cffffd100" .. n.v .. "|r"
+            for _, l in ipairs((pt and n.pt) or n.en or {}) do out[#out + 1] = "|cffbbbbbb-|r " .. Markup(l) end
+        end
+        if not from and not o.force and #out > 0 then break end   -- first time: only the current version
+    end
+    return table.concat(out, "\n")
+end
+
+local function BuildWhatsNew()
+    local f = CreateFrame("Frame", "MilkshaksonWhatsNew", UIParent, "BackdropTemplate")
+    f:SetSize(460, 360)
+    f:SetPoint("CENTER", 0, 60)
+    f:SetFrameStrata("DIALOG")
+    f:SetToplevel(true)
+    f:SetClampedToScreen(true)
+    f:EnableMouse(true)
+    f:SetMovable(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    if f.SetBackdrop then
+        f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+        f:SetBackdropColor(0.04, 0.04, 0.06, 0.96)
+        f:SetBackdropBorderColor(1, 0.82, 0, 0.9)
+    end
+    f.title = f:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    f.title:SetPoint("TOPLEFT", 16, -14)
+    f.title:SetPoint("RIGHT", -36, 0)
+    f.title:SetJustifyH("LEFT")
+    local x = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+    x:SetPoint("TOPRIGHT", -2, -2)
+    x:SetScript("OnClick", function() lib:CloseWhatsNew() end)
+    local sf = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+    sf:SetPoint("TOPLEFT", 16, -42)
+    sf:SetPoint("BOTTOMRIGHT", -34, 48)
+    local child = CreateFrame("Frame", nil, sf)
+    child:SetSize(400, 10)
+    sf:SetScrollChild(child)
+    f.body = child:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    f.body:SetPoint("TOPLEFT")
+    f.body:SetWidth(400)
+    f.body:SetJustifyH("LEFT")
+    f.body:SetSpacing(3)
+    f.child, f.scroll = child, sf
+    local cb = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+    cb:SetSize(22, 22)
+    cb:SetPoint("BOTTOMLEFT", 12, 12)
+    f.cbText = f:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    f.cbText:SetPoint("LEFT", cb, "RIGHT", 2, 0)
+    cb:SetScript("OnClick", function(self)
+        local o = f.current
+        if o and o.db then o.db.whatsNew = self:GetChecked() and true or false end
+    end)
+    f.cb = cb
+    local ok = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    ok:SetSize(90, 24)
+    ok:SetPoint("BOTTOMRIGHT", -14, 12)
+    ok:SetText(OKAY or "OK")
+    ok:SetScript("OnClick", function() lib:CloseWhatsNew() end)
+    f:Hide()
+    return f
+end
+
+function lib:CloseWhatsNew()
+    local f = self.wnFrame
+    if f then f:Hide(); f.current = nil end
+    self:NextWhatsNew()
+end
+
+function lib:NextWhatsNew()
+    local q = self.wnQueue
+    if not q or #q == 0 or (self.wnFrame and self.wnFrame:IsShown()) then return end
+    if InCombatLockdown and InCombatLockdown() then
+        if not self.wnWait then
+            self.wnWait = CreateFrame("Frame")
+            self.wnWait:SetScript("OnEvent", function(w) w:UnregisterAllEvents(); lib:NextWhatsNew() end)
+        end
+        self.wnWait:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return
+    end
+    local o = table.remove(q, 1)
+    local text = self:WhatsNewText(o)
+    if o.db and not o.force then o.db.seenVersion = o.version end
+    if text == "" then return self:NextWhatsNew() end
+    local f = self.wnFrame or BuildWhatsNew()
+    self.wnFrame = f
+    local pt = (o.lang or (PT and "ptBR" or "enUS")) == "ptBR"
+    f.current = o
+    f.title:SetText(("%s %s - %s"):format(o.title or "", o.version or "", pt and "Novidades" or "What's new"))
+    f.body:SetText(text)
+    f.child:SetHeight((tonumber(f.body:GetStringHeight()) or 100) + 10)
+    if f.scroll.SetVerticalScroll then f.scroll:SetVerticalScroll(0) end
+    f.cbText:SetText(pt and "Mostrar as novidades quando o addon atualizar" or "Show what's new when the addon updates")
+    f.cb:SetShown(o.db ~= nil)
+    f.cbText:SetShown(o.db ~= nil)
+    f.cb:SetChecked(not (o.db and o.db.whatsNew == false))
+    f:Show()
+    if f.Raise then f:Raise() end
+end
+
+function lib:WhatsNew(o)
+    if not o or not o.version then return end
+    if not o.force then
+        local db = o.db
+        if not db or db.whatsNew == false or db.seenVersion == o.version then return end
+        if db.seenVersion and VerNum(db.seenVersion) > VerNum(o.version) then db.seenVersion = o.version; return end
+    end
+    self.wnQueue = self.wnQueue or {}
+    for _, e in ipairs(self.wnQueue) do if e.title == o.title then return end end
+    table.insert(self.wnQueue, o)
+    if o.force or not (C_Timer and C_Timer.After) then
+        self:NextWhatsNew()
+    else
+        C_Timer.After(4, function() lib:NextWhatsNew() end)
+    end
 end
