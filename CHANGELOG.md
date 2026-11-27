@@ -1,6 +1,8 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
 ## Unreleased
+- Fishing: **Nat Pagle and the pole hide while you fish** — they only show with the pole equipped and no cast going (the "you are not fishing" reminder).
+- Fishing: **fishing skill up** — the new level ("Fishing 76") rises in blue from the middle of the screen. Option on, with a test button.
 - Fishing: **Nat Pagle and the fishing pole can be moved and resized**, each on its own: untick "Lock Nat and the pole", both show (outlined, with a name), drag to move, pull the corner to resize (the pole stays round); tick again when done. "Reset their position" puts them back in the middle.
 - Options: changing the language changes the options page right away (it used to need /reload) — MilkshaksonUI v9.
 - Fishing options: show Nat Pagle, show the fishing pole, play the warning — each on or off; **Test everything** shows both for 8 seconds (no pole needed) and plays the warning.

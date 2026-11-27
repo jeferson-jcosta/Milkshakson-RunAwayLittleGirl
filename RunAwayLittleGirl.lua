@@ -26,6 +26,7 @@ local defaults = {
     fishingLocked = true, -- off: Nat and the pole can be dragged and resized (both shown to place them)
     fishingIdle = true, -- warning sound after a minute with the pole equipped and no fishing
     fishingSound = "failed", -- failed (quest failed horn) / alarm / raid
+    fishingSkillUp = true, -- blue text rising in the middle of the screen when fishing skill goes up
 }
 local MIN_SW, MIN_SH, MAX_SW, MAX_SH = 60, 80, 320, 420
 

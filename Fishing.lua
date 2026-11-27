@@ -233,6 +233,13 @@ function ns.FishingResetPosition()
     ns.FishingPlace()
 end
 
+-- Fishing right now = the player is channeling (the fishing cast is a channel).
+function ns.IsFishing()
+    if not UnitChannelInfo then return false end
+    local ok, name = pcall(UnitChannelInfo, "player")
+    return ok and name ~= nil
+end
+
 -- Options: db.fishingNat (Nat Pagle), db.fishingIcon (the pole icon), each on/off;
 -- the frame shows while the pole is equipped (or during a test, or while unlocked
 -- to be placed) and one of them is on.
@@ -242,7 +249,8 @@ function ns.UpdateFishing()
     local nat = not (db and db.fishingNat == false)
     local pole = not (db and db.fishingIcon == false)
     ApplyLock()
-    local on = db and (nat or pole) and (testing or Unlocked() or ns.FishingPoleEquipped())
+    -- while fishing (casting = a channel) both hide; they are the "you are NOT fishing" reminder
+    local on = db and (nat or pole) and (testing or Unlocked() or (ns.FishingPoleEquipped() and not ns.IsFishing()))
     if on then
         icon:SetTexture((GetInventoryItemTexture and GetInventoryItemTexture("player", 16)) or FALLBACK)
     end
@@ -362,7 +370,7 @@ ev:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 ev:RegisterEvent("PLAYER_REGEN_DISABLED")
 ev:SetScript("OnEvent", function(_, event, slot)
     if event == "UNIT_SPELLCAST_CHANNEL_START" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
-        if slot == "player" then lastFish, lastWarn = Now(), 0 end
+        if slot == "player" then lastFish, lastWarn = Now(), 0; ns.UpdateFishing() end
         return
     end
     if event == "PLAYER_REGEN_DISABLED" then
@@ -381,4 +389,80 @@ ev:SetScript("OnUpdate", function(_, el)
     if acc < 1 then return end
     acc = 0
     IdleTick()
+end)
+
+---------------------------------------------------------------------------
+-- Fishing skill up: blue text rising from the middle of the screen
+-- ("Fishing 76"). Option db.fishingSkillUp (on). The skill-up line comes as
+-- CHAT_MSG_SKILL (or CHAT_MSG_SYSTEM) with the game's SKILL_RANK_UP format
+-- ("Your skill in %s has increased to %d."); only the fishing skill counts.
+---------------------------------------------------------------------------
+local function PatternFrom(fmt)
+    fmt = fmt:gsub("%%%d%$", "%%")                         -- positional %1$s -> %s
+    fmt = fmt:gsub("%%s", "\001"):gsub("%%d", "\002")    -- placeholders first
+    fmt = fmt:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") -- escape magic chars
+    return "^" .. fmt:gsub("\001", "(.-)"):gsub("\002", "(%%d+)") .. "$"
+end
+ns.FishingPatternFrom = PatternFrom
+
+local function FishingName()
+    if GetProfessions and GetProfessionInfo then
+        local fish = select(4, GetProfessions())
+        if fish then
+            local name = GetProfessionInfo(fish)
+            if name then return name end
+        end
+    end
+    if C_Spell and C_Spell.GetSpellName then
+        local ok, n = pcall(C_Spell.GetSpellName, 7620)
+        if ok and n then return n end
+    end
+    return ns.L.FISHING_NAME
+end
+
+local up = CreateFrame("Frame", "RunAwayLittleGirlSkillUp", UIParent)
+up:SetSize(400, 40)
+up:SetFrameStrata("HIGH")
+up:EnableMouse(false)
+up:Hide()
+local upText = up:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+upText:SetPoint("CENTER")
+if upText.SetFont and STANDARD_TEXT_FONT then upText:SetFont(STANDARD_TEXT_FONT, 26, "OUTLINE") end
+upText:SetTextColor(0.25, 0.62, 1)
+up.text = upText
+local RISE, LIFE, FADE = 110, 2.6, 0.9      -- px, seconds, last seconds fading
+up:SetScript("OnUpdate", function(self, el)
+    self.t = (self.t or 0) + (el or 0)
+    local k = math.min(self.t / LIFE, 1)
+    self:ClearAllPoints()
+    self:SetPoint("CENTER", UIParent, "CENTER", 0, 40 + RISE * k)
+    self:SetAlpha(self.t > LIFE - FADE and math.max(0, (LIFE - self.t) / FADE) or 1)
+    if self.t >= LIFE then self:Hide() end
+end)
+
+function ns.FishingSkillUp(name, rank)
+    local db = RunAwayLittleGirlDB
+    if db and db.fishingSkillUp == false then return end
+    upText:SetText(ns.L.FISHING_UP:format(name or FishingName(), tonumber(rank) or 0))
+    up.t = 0
+    up:SetAlpha(1)
+    up:ClearAllPoints()
+    up:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    up:Show()
+end
+
+local skillPat
+local sk = CreateFrame("Frame")
+sk:RegisterEvent("CHAT_MSG_SKILL")
+sk:RegisterEvent("CHAT_MSG_SYSTEM")
+sk:SetScript("OnEvent", function(_, _, text)
+    if type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then return end
+    if not skillPat then
+        if type(SKILL_RANK_UP) ~= "string" then return end
+        skillPat = PatternFrom(SKILL_RANK_UP)
+    end
+    local name, rank = text:match(skillPat)
+    if not name then return end
+    local fish = FishingName()
+    if fish and name:lower() == fish:lower() then ns.FishingSkillUp(name, rank) end
 end)
