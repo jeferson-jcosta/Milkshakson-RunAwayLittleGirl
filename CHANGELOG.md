@@ -1,6 +1,6 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
-## Unreleased
+## 2.5.0
 - **What's new** popup: after an update, the release notes of the new version show once (Options > "What's new" shows them again; a checkbox turns it off). MilkshaksonUI v10.
 - Fishing: **Nat Pagle and the pole hide while you fish** — they only show with the pole equipped and no cast going (the "you are not fishing" reminder).
 - **Skill up text**: when a profession goes up, the new level ("Mining 76") rises in blue from the middle of the screen. Options section "Skill up": Professions (default, primary and secondary) / Fishing only / All skills (also weapons) / Off, with a test button.
