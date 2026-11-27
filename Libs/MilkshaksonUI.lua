@@ -4,12 +4,13 @@
 -- sub-page per addon. Falls back to a standalone window if the Settings
 -- API is unavailable.
 
-local VERSION = 8
+local VERSION = 9
 local lib = _G.MilkshaksonUI
 if lib and (lib.version or 0) >= VERSION then return end
 lib = lib or {}
 lib.version = VERSION
 _G.MilkshaksonUI = lib
+lib.panels = lib.panels or {}   -- title -> panel: built again in place when the language changes (v9)
 
 local PT = GetLocale() == "ptBR"
 
@@ -61,14 +62,21 @@ local function Standalone(panel, name)
 end
 
 function lib:Register(panel, name)
+    -- built again (language changed): same page, new texts
+    if rawget(panel, "category") then
+        panel:SetHeight(-panel.y + 24)
+        panel:Refresh()
+        return rawget(panel, "category")
+    end
     local frame = panel.outer or panel
     if panel.Refresh then panel:Refresh() end -- checkboxes reflect saved values right away
     local parent = self:GetParent()
     if parent and Settings.RegisterCanvasLayoutSubcategory then
         local ok, sub = pcall(Settings.RegisterCanvasLayoutSubcategory, parent, frame, name)
-        if ok and sub then return sub end
+        if ok and sub then panel.category = sub; return sub end
     end
-    return Standalone(frame, name)
+    panel.category = Standalone(frame, name)
+    return panel.category
 end
 
 function lib:Open(cat)
@@ -100,6 +108,25 @@ local function Tooltip(frame, title, text)
 end
 
 function lib:NewPanel(title, desc)
+    -- Same title again (the addon builds its page again after a language change):
+    -- empty the page and fill it with the new texts; it stays registered.
+    local old = lib.panels[title]
+    if old then
+        for _, c in ipairs({ old:GetChildren() }) do c:Hide(); c:ClearAllPoints() end
+        for _, r in ipairs({ old:GetRegions() }) do r:Hide() end
+        rawset(old, "refreshers", {})
+        local t = old:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        t:SetPoint("TOPLEFT", 16, -16)
+        t:SetText(title)
+        local d = old:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        d:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
+        d:SetPoint("RIGHT", old, "RIGHT", -16, 0)
+        d:SetJustifyH("LEFT")
+        d:SetText(desc or "")
+        old.y = -64
+        lib:SupportBanner(old)
+        return old
+    end
     -- Outer frame is what gets registered; content scrolls inside it (mouse wheel).
     local outer = CreateFrame("Frame")
     outer:Hide() -- so OnShow fires every time the options page is opened
@@ -140,6 +167,7 @@ function lib:NewPanel(title, desc)
         end
         self.refreshing = false
     end
+    lib.panels[title] = p
     return p
 end
 
@@ -293,6 +321,11 @@ function lib:Language(p, ns, db, onChange, label)
             db.locale = (v ~= "auto") and v or nil
             ns:ApplyLocale(db.locale)
             if onChange then onChange() end
+            -- this page in the new language too (next frame: not from inside its own click)
+            if ns.BuildOptions then
+                local function again() pcall(ns.BuildOptions, ns, db) end
+                if C_Timer and C_Timer.After then C_Timer.After(0, again) else again() end
+            end
         end)
     if label then self:Note(p, label) end
 end
