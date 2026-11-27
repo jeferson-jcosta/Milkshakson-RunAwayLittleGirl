@@ -4,7 +4,7 @@
 ## Notes: Run away, little girl! A "rearview mirror" that shows the mobs still chasing you when you flee at low health.
 ## Notes-ptBR: Run away, little girl! Um "retrovisor" que mostra os mobs que ainda te perseguem quando você foge com pouca vida.
 ## Author: JJC
-## Version: 2.5.0
+## Version: 2.6.0
 ## OptionalDeps: DBM-Core
 ## IconTexture: Interface\Icons\Ability_Rogue_Sprint
 ## SavedVariables: RunAwayLittleGirlDB
@@ -23,4 +23,5 @@ Theme.lua
 RunAwayLittleGirl.lua
 Fishing.lua
 Options.lua
+About.lua
 Notes.lua

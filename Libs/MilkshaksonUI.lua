@@ -4,7 +4,7 @@
 -- sub-page per addon. Falls back to a standalone window if the Settings
 -- API is unavailable.
 
-local VERSION = 10
+local VERSION = 11
 local lib = _G.MilkshaksonUI
 if lib and (lib.version or 0) >= VERSION then return end
 lib = lib or {}
@@ -455,6 +455,21 @@ end
 
 function lib:WhatsNewText(o)
     local pt = (o.lang or (PT and "ptBR" or "enUS")) == "ptBR"
+    -- v11: About pages: o.about = { en = { lines }, pt = { lines } }; "# x" = heading
+    if o.about then
+        local out = {}
+        for i, l in ipairs((pt and o.about.pt) or o.about.en or {}) do
+            if l:sub(1, 2) == "# " then
+                out[#out + 1] = " "
+                out[#out + 1] = "|cffffd100" .. l:sub(3) .. "|r"
+            elseif i == 1 then
+                out[#out + 1] = Markup(l)
+            else
+                out[#out + 1] = "|cffbbbbbb-|r " .. Markup(l)
+            end
+        end
+        return table.concat(out, "\n")
+    end
     local from = (not o.force) and o.db and o.db.seenVersion and VerNum(o.db.seenVersion) or nil
     local out = {}
     for _, n in ipairs(o.notes or {}) do
@@ -550,13 +565,13 @@ function lib:NextWhatsNew()
     self.wnFrame = f
     local pt = (o.lang or (PT and "ptBR" or "enUS")) == "ptBR"
     f.current = o
-    f.title:SetText(("%s %s - %s"):format(o.title or "", o.version or "", pt and "Novidades" or "What's new"))
+    f.title:SetText(("%s %s - %s"):format(o.title or "", o.version or "", o.about and (pt and "Sobre" or "About") or (pt and "Novidades" or "What's new")))
     f.body:SetText(text)
     f.child:SetHeight((tonumber(f.body:GetStringHeight()) or 100) + 10)
     if f.scroll.SetVerticalScroll then f.scroll:SetVerticalScroll(0) end
     f.cbText:SetText(pt and "Mostrar as novidades quando o addon atualizar" or "Show what's new when the addon updates")
-    f.cb:SetShown(o.db ~= nil)
-    f.cbText:SetShown(o.db ~= nil)
+    f.cb:SetShown(o.db ~= nil and not o.about)
+    f.cbText:SetShown(o.db ~= nil and not o.about)
     f.cb:SetChecked(not (o.db and o.db.whatsNew == false))
     f:Show()
     if f.Raise then f:Raise() end
@@ -570,11 +585,18 @@ function lib:WhatsNew(o)
         if db.seenVersion and VerNum(db.seenVersion) > VerNum(o.version) then db.seenVersion = o.version; return end
     end
     self.wnQueue = self.wnQueue or {}
-    for _, e in ipairs(self.wnQueue) do if e.title == o.title then return end end
+    for _, e in ipairs(self.wnQueue) do if e.title == o.title and not e.about == not o.about then return end end
     table.insert(self.wnQueue, o)
     if o.force or not (C_Timer and C_Timer.After) then
         self:NextWhatsNew()
     else
         C_Timer.After(4, function() lib:NextWhatsNew() end)
     end
+end
+
+-- v11: the addon's description in the same window (Options > About)
+function lib:About(o)
+    o.about = o.about or o.notes
+    o.force = true
+    return self:WhatsNew(o)
 end

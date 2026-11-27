@@ -1,6 +1,7 @@
 # Changelog - Milkshakson - Run Away Little Girl
 
-## Unreleased
+## 2.6.0
+- **About** button in Options: what the addon does and its commands, in your language (same text as the GitHub and CurseForge pages). MilkshaksonUI v11.
 - **Alliance / Horde theme** for the windows (Options > Appearance: my faction / Alliance blue / Horde red), like Trader and Phone.
 - Fishing: **no lure warning** — while you fish with no lure on the pole, a pulsing lure icon with "No lure!" shows where the pole icon sits. Option "Warn when fishing without a lure" (on); Test everything shows it.
 

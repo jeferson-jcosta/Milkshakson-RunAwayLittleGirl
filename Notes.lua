@@ -4,6 +4,15 @@
 local ADDON, ns = ...
 
 ns.NOTES = {
+    { v = "2.6.0",
+      en = {
+        "**No lure?** While you fish with no lure on the pole, a pulsing lure icon with **No lure!** shows where the pole icon sits.",
+        "**Alliance / Horde colors** for the mirror window — Options > Appearance.",
+      },
+      pt = {
+        "**Sem isca?** Enquanto você pesca sem isca na vara, um ícone de isca pulsando com **Sem isca!** aparece onde fica o ícone da vara.",
+        "**Cores da Aliança / Horda** na janela do espelho — Opções > Aparência.",
+      } },
     { v = "2.5.0",
       en = {
         "**Fishing**: Nat Pagle and the fishing pole in the middle of the screen while a pole is equipped and you are not fishing (hidden while you fish).",
@@ -38,6 +47,13 @@ function ns:ShowWhatsNew(force)
     if not (UI and UI.WhatsNew) then return end
     UI:WhatsNew({ title = "Run Away Little Girl", version = Version(), notes = ns.NOTES,
         db = RunAwayLittleGirlDB, lang = ns.localeCode, force = force })
+end
+
+-- Options > About: the addon's description (About.lua, same text as the README / CurseForge page)
+function ns:ShowAbout()
+    local UI = MilkshaksonUI
+    if not (UI and UI.About and ns.ABOUT) then return end
+    UI:About({ title = "Run Away Little Girl", version = Version(), about = ns.ABOUT, lang = ns.localeCode })
 end
 
 local f = CreateFrame("Frame")

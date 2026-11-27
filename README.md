@@ -1,58 +1,64 @@
-# Milkshakson - Run Away Little Girl (WoW: Forever)
+# Milkshakson - Run Away Little Girl
 
-*"Run away, little girl! Run away!"* A "rearview mirror" that shows the mobs still chasing you while you flee. The mob on you appears as a live 3D model with its name, its health bar and "on you" when it is targeting you. When more mobs are chasing you, the mirror keeps the same size and shows a red **+N** badge with how many more.
+***"Run away, little girl!"*** A **rearview mirror** that shows the mobs still chasing you when you flee — plus a **fishing assistant** with Nat Pagle, lure and skill-up alerts. For WoW: Forever.
 
-## When it shows up
-All of these must be true:
-1. You are in combat.
-2. You have been running for at least **2 s** (`/rv secs`).
-3. The game's own **low-health warning** (red screen edges) is on. The game decides when you're low; the addon only listens to it.
-4. At least one hostile mob with a nameplate is chasing you.
+![WoW: Forever](https://img.shields.io/badge/WoW-Forever%201.60.1-orange) ![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![Languages](https://img.shields.io/badge/lang-English%20%7C%20Portugu%C3%AAs-green)
 
-Once shown, the mirror stays up until no mob is chasing you, or until you leave combat. Then it shows **"The little girl got away!"** for a moment and hides.
+## Rearview mirror
+- When the game's **low-health warning** fires while you flee, a mirror shows the mobs still chasing you: 3D model, name, health bar, *on you*.
+- The Big Bad Wolf's line when it appears, your character's laugh when you **get away** (both optional).
 
+## Fishing assistant
+- **Nat Pagle** (animated) and your pole in the middle of the screen while a pole is equipped and you are **not fishing** — so you never fight with a fishing pole.
+- **Warning sound** in combat or after a minute without fishing (horn, alarm, raid warning or spoken).
+- **No lure!** while you fish without a lure on the pole.
+- **Skill up:** the new level rises in blue from the middle of the screen (professions, fishing only, or every skill).
 
-## Position
-By default the mirror sits right under your player frame, and it follows that frame if you move it in Edit Mode. Once you drag the mirror, it stays where you put it. `/rv reset` puts it back under the player frame.
+## Your way
+- Move and resize the mirror, Nat and the pole; **Alliance / Horde** colors; **What's new** after each update; English and Português.
 
-## Options
-Options > AddOns > **Milkshakson > Run Away Little Girl**, or `/mrv config` (also `/rv config`), or right-click the addon button next to the minimap. From there you can:
-- Set the running seconds and "only when running".
-- Toggle the sounds.
-- Lock the mirror.
-- Move/resize, test or reset it.
-- Pick the language.
-
-## Install
-Copy `Milkshakson-RunAwayLittleGirl` to `World of Warcraft\_forever_\Interface\AddOns\` and enable it on the AddOns screen.
+> Requires enemy nameplates for the mirror (default key `V`).
 
 ## Commands
-| Command | Action |
-|---|---|
-| `/rv` | Status + help |
-| `/rv test` | Preview using your current target, without combat |
-| `/rv move` | Positioning mode: shows the mirror (with your own model) so you can drag it and resize it from the corner. Run it again to finish |
-| `/rv lock` | Lock/unlock dragging. When unlocked (default) the mirror can be dragged any time it is visible |
-| `/rv reset` | Back to the default spot under your player frame, default size |
-| `/rv secs <n>` | Seconds running before it activates (default 2) |
-| `/rv sound` | Toggle the alert and "escaped" sounds |
-| `/rv lang <code\|auto>` | Language (enUS, ptBR) |
+| Command | |
+| --- | --- |
+| `/rv` (`/mrv`, `/runaway`) | status and help |
+| `/rv test` | preview with your target |
+| `/rv config` | options |
 
-Aliases: `/mrv`, `/runaway`, `/mrunaway`, `/runawaylittlegirl`, `/retrovisor`. Every `/rv` command also works as `/mrv`, e.g. `/mrv move`.
+Every command is also a button in the addon's window or options page (Options > AddOns > Milkshakson).
 
-## Requirements and limits
-- **Enemy nameplates must be on** (default key: `V`). The addon finds mobs through their nameplates, so a mob outside nameplate range is not shown. In practice it is already far behind.
-- WoW has no API for a real rear camera. The "mirror" shows each mob's own model instead.
-- On the Forever/Midnight client the game can hide some combat values from addons ("secret values"). The addon checks each one:
-  - Your own health is never read: the game's low-health warning is the trigger, so hidden health doesn't matter.
-  - If a mob's target and threat are both hidden, any hostile mob in combat counts as chasing you.
-  - Mob names and health bars still display, because hidden values can be passed straight to the UI.
+## Optional integrations
+None needed (uses the game's own sounds and models). Everything works with the game alone.
 
-## Support / Apoie
-If you enjoy the addon, you can buy me a coffee. The same links are in the in-game options panel, in copyable fields.
-- **PayPal:** [Donate](https://www.paypal.com/donate/?business=Q72ZP8CCJ6PFA&no_recurring=0&item_name=Buy+me+a+coffee+to+keep+my+WoW+Forever+addons+updated%21+%2F+Me+pague+um+caf%C3%A9+e+ajude+a+manter+os+addons+atualizados%21&currency_code=BRL)
-- **PIX (Brasil):** `2d8f2ae7-76df-497d-9afa-cb7d12dd73f9`
+## Install
+CurseForge app, or download the zip from [Releases](../../releases) and extract it into `World of Warcraft\_forever_\Interface\AddOns`.
 
-## Sounds
-- **When the mirror appears:** the Big Bad Wolf's *"Run away, little girl! Run away!"* (Karazhan opera). It plays together with the mirror, when the game's low-health warning fires.
-- **When you get away:** your character's laugh (race and gender).
+---
+
+## Português (Brasil)
+
+***"Corre, garotinha!"*** Um **retrovisor** que mostra os mobs que ainda te perseguem quando você foge — e um **assistente de pesca** com o Nat Pagle, aviso de isca e de skill. Para o WoW: Forever.
+
+### Retrovisor
+- Quando o **aviso de vida baixa** do jogo dispara enquanto você foge, um espelho mostra os mobs que ainda te perseguem: modelo 3D, nome, vida, *em você*.
+- A fala do Lobo Mau quando aparece e a risada do seu personagem quando você **escapa** (opcionais).
+
+### Assistente de pesca
+- **Nat Pagle** (animado) e a sua vara no meio da tela com a vara equipada e **sem pescar** — para nunca lutar de vara na mão.
+- **Aviso sonoro** em combate ou depois de um minuto sem pescar (corneta, alarme, aviso de raide ou falado).
+- **Sem isca!** enquanto você pesca sem isca na vara.
+- **Habilidade subiu:** o novo nível sobe em azul do meio da tela (profissões, só pesca, ou todas).
+
+### Do seu jeito
+- Mova e redimensione o espelho, o Nat e a vara; cores da **Aliança / Horda**; **Novidades** a cada atualização; inglês e português.
+
+> O espelho precisa das placas de nome inimigas (tecla padrão `V`).
+
+**Comandos:** `/rv` (`/mrv`, `/runaway`) status e ajuda · `/rv test` prévia com o seu alvo · `/rv config` opções
+
+---
+
+**More Milkshakson addons for WoW: Forever / Mais addons Milkshakson:** Ready Quests, Phone, Ninjas, Rivals, Trader.
+
+MIT License · by JJC
